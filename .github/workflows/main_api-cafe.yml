@@ -59,4 +59,4 @@ jobs:
           app-name: 'api-cafe'
           slot-name: 'Production'
           package: .
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_1B08093A8CFA476AACC93212FDCC2767 }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_7094AEE3B308465BBAA8CAB345CB2A48 }}

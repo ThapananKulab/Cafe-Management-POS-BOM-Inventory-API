@@ -55,7 +55,7 @@ mongoose.connect(
     'mongodb+srv://nicekrubma10:kulab12345@cluster0.uqjxafb.mongodb.net/?retryWrites=true&w=majority'
 )
 app.listen(process.env.PORT || 3333, () => {
-  console.log(`App listening on port ${process.env.PORT || 3333}`)
+  console.log(`App listening on port ${process.env.PORT || 8080}`)
 })
 
 //api

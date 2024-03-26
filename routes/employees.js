@@ -100,5 +100,5 @@ router.post('/update-profile', parser.single('image'), async (req, res) => {
     res.status(500).send('Internal Server Error')
   }
 })
-
+//
 module.exports = router

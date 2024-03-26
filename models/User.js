@@ -1,6 +1,6 @@
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs'); // Require bcryptjs instead of bcrypt
-const moment = require('moment-timezone');
+const mongoose = require('mongoose')
+const bcrypt = require('bcryptjs') // Require bcryptjs instead of bcrypt
+const moment = require('moment-timezone')
 
 const UserSchema = new mongoose.Schema({
   username: {
@@ -23,6 +23,7 @@ const UserSchema = new mongoose.Schema({
   email: {
     type: String,
     required: true,
+    unique: true,
   },
   phone: {
     type: String,
@@ -44,27 +45,28 @@ const UserSchema = new mongoose.Schema({
     required: true,
     default: () => moment().tz('Asia/Bangkok').toDate(),
   },
-});
+})
 
 UserSchema.pre('save', function (next) {
-  const user = this;
-  bcrypt.hash(user.password, 10)
-    .then(hash => {
-      user.password = hash;
-      next();
+  const user = this
+  bcrypt
+    .hash(user.password, 10)
+    .then((hash) => {
+      user.password = hash
+      next()
     })
-    .catch(error => {
-      console.error(error);
-      next(error); // Call next with the error to propagate it
-    });
-});
+    .catch((error) => {
+      console.error(error)
+      next(error)
+    })
+})
 
-UserSchema.methods.verifyPassword = async function (password) {
-  try {
-    return await bcrypt.compare(password, this.password);
-  } catch (error) {
-    throw error;
-  }
-};
+// UserSchema.methods.verifyPassword = async function (password) {
+//   try {
+//     return await bcrypt.compare(password, this.password);
+//   } catch (error) {
+//     throw error;
+//   }
+// };
 
-module.exports = mongoose.model('User', UserSchema);
+module.exports = mongoose.model('User', UserSchema)

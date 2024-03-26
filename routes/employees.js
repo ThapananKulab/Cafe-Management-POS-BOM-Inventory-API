@@ -1,10 +1,10 @@
-const cloudinary = require('../utils/cloudinary.js')
 const express = require('express')
 const router = express.Router()
 const multer = require('multer')
 const User = require('../models/User.js')
+const cloudinary = require('../utils/cloudinary.js') // Import Cloudinary SDK
 
-const storage = multer.diskStorage({})
+const storage = multer.diskStorage({}) // You can customize this storage as needed
 const parser = multer({ storage: storage })
 
 router.post('/add-user', parser.single('image'), async (req, res) => {
@@ -18,7 +18,6 @@ router.post('/add-user', parser.single('image'), async (req, res) => {
     address,
     role,
   } = req.body
-  const imageUrl = req.file ? req.file.path : ''
 
   try {
     const existingUser = await User.findOne({ username })
@@ -30,8 +29,12 @@ router.post('/add-user', parser.single('image'), async (req, res) => {
       })
     }
 
-    const folder = 'users' // Specify the folder here
-    const result = await cloudinary.uploader.upload(imageUrl, { folder }) // Upload with folder parameter
+    let imageUrl = ''
+    if (req.file) {
+      // Upload image to Cloudinary
+      const result = await cloudinary.uploader.upload(req.file.path, { folder: 'users' })
+      imageUrl = result.secure_url
+    }
 
     const newUser = new User({
       username,
@@ -42,7 +45,7 @@ router.post('/add-user', parser.single('image'), async (req, res) => {
       phone,
       address,
       role,
-      image: result.secure_url,
+      image: imageUrl,
     })
     const savedUser = await newUser.save()
 
@@ -59,9 +62,6 @@ router.post('/add-user', parser.single('image'), async (req, res) => {
   }
 })
 
-module.exports = router
-
-
 router.post('/update-profile', parser.single('image'), async (req, res) => {
   const updateP_id = req.body.updateP_id
   const { firstname, lastname, email, phone, address, role } = req.body
@@ -74,10 +74,17 @@ router.post('/update-profile', parser.single('image'), async (req, res) => {
     ...(address && { address }),
     ...(role && { role }),
 
-    ...(req.file && { image: req.file.path }),
+    // Check if there is a file uploaded
+    ...(req.file && { image: req.file.path }), // If you want to save file path, otherwise, upload to Cloudinary
   }
 
   try {
+    // If there is a file uploaded, upload it to Cloudinary
+    if (req.file) {
+      const result = await cloudinary.uploader.upload(req.file.path, { folder: 'users' })
+      updateData.image = result.secure_url
+    }
+
     const updatedUser = await User.findByIdAndUpdate(updateP_id, updateData, {
       new: true,
       runValidators: true,

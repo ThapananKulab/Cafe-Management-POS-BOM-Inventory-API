@@ -1,18 +1,10 @@
 const express = require('express')
 const router = express.Router()
-const mongoose = require('mongoose')
 const Menu = require('../models/Menu.js')
 const cloudinary = require('../utils/cloudinary.js')
-const { CloudinaryStorage } = require('multer-storage-cloudinary')
 const multer = require('multer')
 
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'menus',
-  },
-})
-
+const storage = multer.diskStorage({}) 
 const parser = multer({ storage: storage })
 
 router.post('/addMenu', parser.single('image'), async (req, res) => {
@@ -27,12 +19,15 @@ router.post('/addMenu', parser.single('image'), async (req, res) => {
   const imageUrl = req.file.path
 
   try {
+    
+    const result = await cloudinary.uploader.upload(imageUrl, { folder: 'menus' })
+
     const menuItem = new Menu({
       name,
       description,
       price,
       recipe,
-      image: imageUrl,
+      image: result.secure_url,
     })
 
     const savedItem = await menuItem.save()
@@ -46,7 +41,6 @@ router.post('/addMenu', parser.single('image'), async (req, res) => {
   }
 })
 
-module.exports = router
 
 router.get('/allMenus', async (req, res) => {
   try {

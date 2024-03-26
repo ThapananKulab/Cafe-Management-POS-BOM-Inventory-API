@@ -1,33 +1,39 @@
-const cloudinary = require('../utils/cloudinary.js')
-const { CloudinaryStorage } = require('multer-storage-cloudinary')
-
 const express = require('express')
 const router = express.Router()
-const multer = require('multer')
 const Product = require('../models/Product.js')
+const cloudinary = require('../utils/cloudinary.js') // Import Cloudinary SDK
+const multer = require('multer')
 
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'products',
-  },
-})
-
+// Multer setup
+const storage = multer.diskStorage({}) // You can customize this storage as needed
 const parser = multer({ storage: storage })
+
 router.post('/createProduct', parser.single('image'), async (req, res) => {
   const { productname, type, price, quantity } = req.body
+
+  if (!req.file) {
+    return res
+      .status(400)
+      .json({ success: false, message: 'No image file provided.' })
+  }
+
   const imageUrl = req.file.path
 
   try {
+    // Upload image to Cloudinary
+    const result = await cloudinary.uploader.upload(imageUrl, { folder: 'products' })
+
+    // Create product in database
     const product = await Product.create({
       productname,
       type,
       price: Number(price),
       image: {
-        url: imageUrl,
+        url: result.secure_url, // Use secure_url from Cloudinary upload result
       },
       quantity: Number(quantity),
     })
+
     res.status(201).json({
       success: true,
       product,

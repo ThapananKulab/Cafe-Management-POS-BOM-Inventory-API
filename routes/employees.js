@@ -4,7 +4,7 @@ const router = express.Router()
 const multer = require('multer')
 const User = require('../models/User.js')
 
-const storage = multer.diskStorage({}) // You can customize this storage as needed
+const storage = multer.diskStorage({})
 const parser = multer({ storage: storage })
 
 router.post('/add-user', parser.single('image'), async (req, res) => {
@@ -56,6 +56,41 @@ router.post('/add-user', parser.single('image'), async (req, res) => {
     res
       .status(500)
       .json({ success: false, message: 'Server error', data: null })
+  }
+})
+
+module.exports = router
+
+
+router.post('/update-profile', parser.single('image'), async (req, res) => {
+  const updateP_id = req.body.updateP_id
+  const { firstname, lastname, email, phone, address, role } = req.body
+
+  const updateData = {
+    ...(firstname && { firstname }),
+    ...(lastname && { lastname }),
+    ...(email && { email }),
+    ...(phone && { phone }),
+    ...(address && { address }),
+    ...(role && { role }),
+
+    ...(req.file && { image: req.file.path }),
+  }
+
+  try {
+    const updatedUser = await User.findByIdAndUpdate(updateP_id, updateData, {
+      new: true,
+      runValidators: true,
+    })
+
+    if (!updatedUser) {
+      return res.status(404).send('User not found')
+    }
+
+    res.json(updatedUser)
+  } catch (err) {
+    console.error('Error updating user:', err)
+    res.status(500).send('Internal Server Error')
   }
 })
 

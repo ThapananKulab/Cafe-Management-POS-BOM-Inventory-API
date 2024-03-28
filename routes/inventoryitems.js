@@ -68,43 +68,61 @@ router.patch('/update-stock/:id', async (req, res) => {
   }
 })
 
-// Update an inventory item
 router.patch('/update/:id', async (req, res) => {
-  const { id } = req.params
-  const { name, unit, realquantity, quantityInStock, unitPrice } = req.body
-
+  const { id } = req.params // Get the ID from the URL
+  const { name, unit, realquantity, quantityInStock, unitPrice } = req.body // Destructure the updated values from the request body
   try {
-    const item = await InventoryItem.findById(id)
-    if (!item) {
-      return res.status(404).json({ message: 'No item found with that ID.' })
+    const updatedItem = await InventoryItem.findByIdAndUpdate(
+      id,
+      {
+        name,
+        unit,
+        realquantity,
+        quantityInStock,
+        unitPrice,
+      },
+      { new: true }
+    )
+    if (!updatedItem) {
+      return res.status(404).json({ message: 'Inventory item not found.' })
     }
-
-    // Update the item with new values. Only update provided fields
-    if (name) item.name = name
-    if (unit) item.unit = unit
-    if (realquantity) item.realquantity = realquantity
-    if (quantityInStock) item.quantityInStock = quantityInStock
-    if (unitPrice) item.unitPrice = unitPrice
-
-    const updatedItem = await item.save()
     res.status(200).json(updatedItem)
   } catch (error) {
     res.status(400).json({ message: error.message })
   }
 })
 
-// Fetch a single inventory item by ID
-
 router.get('/:id', (req, res, next) => {
   console.log(req.params.id) // Check the ID value
   InventoryItem.findById(req.params.id)
     .then((inventoryItem) => {
-      // Use camelCase for variable names
       res.json(inventoryItem)
     })
     .catch((err) => {
       next(err)
     })
+})
+
+router.get('/api/inventoryitems/check-name-exists', async (req, res) => {
+  const { name, excludeId } = req.query
+
+  try {
+    // Build the query object
+    let query = { name: name }
+    if (excludeId) {
+      query._id = { $ne: excludeId } // Exclude the item with this ID from the check
+    }
+
+    const itemExists = await InventoryItem.findOne(query)
+    if (itemExists) {
+      return res.json({ exists: true })
+    } else {
+      return res.json({ exists: false })
+    }
+  } catch (error) {
+    console.error('Failed to check name existence:', error)
+    res.status(500).json({ error: 'Internal server error' })
+  }
 })
 
 module.exports = router

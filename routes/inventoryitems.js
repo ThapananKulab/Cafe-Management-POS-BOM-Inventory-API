@@ -92,7 +92,7 @@ router.patch('/update/:id', async (req, res) => {
   }
 })
 
-router.get('/:id', (req, res, next) => {
+router.get('/:id', async (req, res) => {
   console.log(req.params.id) // Check the ID value
   InventoryItem.findById(req.params.id)
     .then((inventoryItem) => {
@@ -103,26 +103,25 @@ router.get('/:id', (req, res, next) => {
     })
 })
 
-router.get('/api/inventoryitems/check-name-exists', async (req, res) => {
-  const { name, excludeId } = req.query
+// router.get('/check-name-exists', async (req, res) => {
+//   const { name, excludeId } = req.query
 
-  try {
-    // Build the query object
-    let query = { name: name }
-    if (excludeId) {
-      query._id = { $ne: excludeId } // Exclude the item with this ID from the check
-    }
+//   try {
+//     let query = { name: name }
+//     if (excludeId) {
+//       query._id = { $ne: mongoose.Types.ObjectId(excludeId) } // Convert to ObjectId
+//     }
 
-    const itemExists = await InventoryItem.findOne(query)
-    if (itemExists) {
-      return res.json({ exists: true })
-    } else {
-      return res.json({ exists: false })
-    }
-  } catch (error) {
-    console.error('Failed to check name existence:', error)
-    res.status(500).json({ error: 'Internal server error' })
-  }
-})
+//     const itemExists = await InventoryItem.findOne(query)
+//     if (itemExists) {
+//       return res.json({ exists: true })
+//     } else {
+//       return res.json({ exists: false })
+//     }
+//   } catch (error) {
+//     console.error('Failed to check name existence:', error)
+//     res.status(500).json({ error: 'Internal server error' })
+//   }
+// })
 
 module.exports = router

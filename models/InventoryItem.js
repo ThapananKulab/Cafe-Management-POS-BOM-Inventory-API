@@ -2,6 +2,7 @@
 const mongoose = require('mongoose')
 
 const inventoryItemSchema = new mongoose.Schema({
+  order: { type: Number }, // เพิ่มฟิลด์นี้เพื่อเก็บลำดับ
   name: { type: String, required: true },
   unit: {
     type: String,

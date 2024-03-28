@@ -1,5 +1,6 @@
 const express = require('express')
 const router = express.Router()
+const Recipe = require('../models/Recipe')
 const InventoryItem = require('../models/InventoryItem.js')
 
 // Fetch all inventory items
@@ -101,6 +102,54 @@ router.get('/:id', async (req, res) => {
     .catch((err) => {
       next(err)
     })
+})
+
+router.delete('/inventory/delete/:inventoryItemId', async (req, res) => {
+  try {
+    const { inventoryItemId } = req.params
+
+    // Check if the inventory item is being used in any recipes
+    const isUsedInRecipe = await Recipe.findOne({
+      'ingredients.inventoryItemId': inventoryItemId,
+    })
+
+    if (isUsedInRecipe) {
+      return res.status(400).json({
+        message: 'Cannot delete: This inventory item is being used in recipes.',
+      })
+    }
+
+    // If not used in any recipe, proceed with deletion
+    const deletedInventoryItem = await InventoryItem.findByIdAndDelete(
+      inventoryItemId
+    )
+
+    if (!deletedInventoryItem) {
+      return res
+        .status(404)
+        .json({ message: 'No inventory item found with that ID.' })
+    }
+
+    res.status(200).json({ message: 'Inventory item deleted successfully.' })
+  } catch (error) {
+    res.status(500).json({ message: error.message })
+  }
+})
+
+router.patch('/update-order', async (req, res) => {
+  try {
+    const { orderUpdates } = req.body
+    for (const { id, newPosition } of orderUpdates) {
+      console.log(`Updating item ${id} to new order ${newPosition}`)
+      await InventoryItem.findByIdAndUpdate(id, {
+        $set: { order: newPosition },
+      })
+    }
+
+    res.status(200).json({ message: 'Orders updated successfully' })
+  } catch (error) {
+    res.status(500).json({ message: error.message })
+  }
 })
 
 // router.get('/check-name-exists', async (req, res) => {

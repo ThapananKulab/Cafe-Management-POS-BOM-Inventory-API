@@ -14,10 +14,11 @@ router.get('/all', async (req, res) => {
 
 // Add a new inventory item
 router.post('/add', async (req, res) => {
-  const { name, unit, quantityInStock, unitPrice } = req.body
+  const { name, unit, realquantity, quantityInStock, unitPrice } = req.body
   const item = new InventoryItem({
     name,
     unit,
+    realquantity,
     quantityInStock,
     unitPrice,
   })
@@ -60,11 +61,50 @@ router.patch('/update-stock/:id', async (req, res) => {
     item.quantityInStock += adjustment
     const updatedItem = await item.save()
     res.status(200).json({
-      message: `Stock for ${item.name} adjusted by ${adjustment}. New stock is ${updatedItem.quantityInStock}.`,
+      message: `${item.name} เพิ่มไป ${adjustment}. จำนวนคงเหลือ ${updatedItem.quantityInStock}.`,
     })
   } catch (error) {
     res.status(400).json({ message: error.message })
   }
+})
+
+// Update an inventory item
+router.patch('/update/:id', async (req, res) => {
+  const { id } = req.params
+  const { name, unit, realquantity, quantityInStock, unitPrice } = req.body
+
+  try {
+    const item = await InventoryItem.findById(id)
+    if (!item) {
+      return res.status(404).json({ message: 'No item found with that ID.' })
+    }
+
+    // Update the item with new values. Only update provided fields
+    if (name) item.name = name
+    if (unit) item.unit = unit
+    if (realquantity) item.realquantity = realquantity
+    if (quantityInStock) item.quantityInStock = quantityInStock
+    if (unitPrice) item.unitPrice = unitPrice
+
+    const updatedItem = await item.save()
+    res.status(200).json(updatedItem)
+  } catch (error) {
+    res.status(400).json({ message: error.message })
+  }
+})
+
+// Fetch a single inventory item by ID
+
+router.get('/:id', (req, res, next) => {
+  console.log(req.params.id) // Check the ID value
+  InventoryItem.findById(req.params.id)
+    .then((inventoryItem) => {
+      // Use camelCase for variable names
+      res.json(inventoryItem)
+    })
+    .catch((err) => {
+      next(err)
+    })
 })
 
 module.exports = router

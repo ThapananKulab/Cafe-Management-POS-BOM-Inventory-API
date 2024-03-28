@@ -8,14 +8,15 @@ const inventoryItemSchema = new mongoose.Schema({
     required: true,
     enum: ['กรัม', 'มิลลิลิตร', 'ชิ้น', 'ซอง'],
   },
+  realquantity: { type: Number, required: true },
   quantityInStock: { type: Number, required: true },
   unitPrice: { type: Number, required: true },
 })
 
 // เพิ่ม method สำหรับการปรับปรุงสต็อก
 inventoryItemSchema.methods.adjustStock = async function (amount) {
-  this.quantityInStock += amount // เพิ่มหรือลดสต็อกตามค่า amount ที่ส่งเข้ามา
-  await this.save() // บันทึกการเปลี่ยนแปลงลงในฐานข้อมูล
+  this.quantityInStock += amount
+  await this.save()
 }
 
 module.exports = mongoose.model('InventoryItem', inventoryItemSchema)

@@ -4,7 +4,6 @@ const Recipe = require('../models/Recipe.js')
 //
 router.get('/all', async (req, res) => {
   try {
-    // Here's where we modify the find query to include populate
     const recipes = await Recipe.find({}).populate(
       'ingredients.inventoryItemId'
     )
@@ -49,7 +48,6 @@ router.delete('/delete/:id', async (req, res) => {
   }
 })
 
-// PUT endpoint to update a recipe in your Express router
 router.put('/update/:id', async (req, res) => {
   const { id } = req.params
   const { name, ingredients } = req.body

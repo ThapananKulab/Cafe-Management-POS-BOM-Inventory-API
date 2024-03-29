@@ -4,7 +4,7 @@ const Menu = require('../models/Menu.js')
 const cloudinary = require('../utils/cloudinary.js')
 const multer = require('multer')
 
-const storage = multer.diskStorage({}) 
+const storage = multer.diskStorage({})
 const parser = multer({ storage: storage })
 
 router.post('/addMenu', parser.single('image'), async (req, res) => {
@@ -19,8 +19,9 @@ router.post('/addMenu', parser.single('image'), async (req, res) => {
   const imageUrl = req.file.path
 
   try {
-    
-    const result = await cloudinary.uploader.upload(imageUrl, { folder: 'menus' })
+    const result = await cloudinary.uploader.upload(imageUrl, {
+      folder: 'menus',
+    })
 
     const menuItem = new Menu({
       name,
@@ -40,7 +41,6 @@ router.post('/addMenu', parser.single('image'), async (req, res) => {
     res.status(400).json({ success: false, message: 'Error adding menu item' })
   }
 })
-
 
 router.get('/allMenus', async (req, res) => {
   try {
@@ -100,6 +100,70 @@ router.get('/checkName', async (req, res) => {
     res
       .status(500)
       .json({ success: false, message: 'Error checking menu name' })
+  }
+})
+
+router.put('/:id', parser.single('image'), async (req, res) => {
+  const { id } = req.params
+  const { name, description, price, recipe } = req.body
+
+  try {
+    let updatedData = {
+      name,
+      description,
+      price,
+      recipe,
+    }
+
+    if (req.file) {
+      const imageUrl = req.file.path
+      const result = await cloudinary.uploader.upload(imageUrl, {
+        folder: 'menus',
+      })
+      updatedData.image = result.secure_url
+    }
+
+    const updatedItem = await Menu.findByIdAndUpdate(id, updatedData, {
+      new: true,
+    })
+
+    if (!updatedItem) {
+      return res
+        .status(404)
+        .json({ success: false, message: 'Menu item not found' })
+    }
+
+    res.json({
+      success: true,
+      message: 'Menu item updated successfully',
+      menuItem: updatedItem,
+    })
+  } catch (error) {
+    console.error(error)
+    res
+      .status(500)
+      .json({ success: false, message: 'Error updating menu item' })
+  }
+})
+
+router.get('/menu/:id', async (req, res) => {
+  const { id } = req.params // Extract the ID from the request parameters
+
+  try {
+    const menuItem = await Menu.findById(id).populate('recipe') // Assuming 'recipe' is a reference in your Menu model that you want populated
+
+    if (!menuItem) {
+      return res
+        .status(404)
+        .json({ success: false, message: 'Menu item not found' })
+    }
+
+    res.status(200).json(menuItem)
+  } catch (error) {
+    console.error(error)
+    res
+      .status(500)
+      .json({ success: false, message: 'Error fetching menu item details' })
   }
 })
 

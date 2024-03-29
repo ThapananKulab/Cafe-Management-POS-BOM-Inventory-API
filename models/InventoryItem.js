@@ -11,6 +11,7 @@ const inventoryItemSchema = new mongoose.Schema({
   },
   realquantity: { type: Number, required: true },
   quantityInStock: { type: Number, required: true },
+  useInStock: { type: Number, required: true },
   unitPrice: { type: Number, required: true },
 })
 

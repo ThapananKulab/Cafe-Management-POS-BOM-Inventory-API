@@ -4,11 +4,24 @@ const SaleOrder = require('../models/SaleOrder.js')
 
 router.post('/saleOrders', async (req, res) => {
   try {
-    const saleOrder = new SaleOrder(req.body)
-    const savedSaleOrder = await saleOrder.save()
-    res.status(201).json(savedSaleOrder)
+    const { user, items, total, status, paymentMethod, notes } = req.body
+
+    const newOrder = new SaleOrder({
+      user,
+      items,
+      total,
+      status,
+      paymentMethod,
+      notes,
+    })
+
+    // Save the new order to the database
+    const savedOrder = await newOrder.save()
+
+    res.status(201).json(savedOrder) // Respond with the created order
   } catch (error) {
-    res.status(400).json({ message: error.message })
+    console.error('Error creating order:', error)
+    res.status(500).json({ error: 'Internal Server Error' })
   }
 })
 
@@ -18,6 +31,32 @@ router.get('/saleOrders', async (req, res) => {
     res.json(saleOrders)
   } catch (error) {
     res.status(500).json({ message: error.message })
+  }
+})
+
+router.post('/orders', async (req, res) => {
+  try {
+    const { orderNumber, user, items, total, status, paymentMethod, notes } =
+      req.body
+
+    // Create a new SaleOrder document
+    const newOrder = new SaleOrder({
+      orderNumber,
+      user,
+      items,
+      total,
+      status,
+      paymentMethod,
+      notes,
+    })
+
+    // Save the new order to the database
+    const savedOrder = await newOrder.save()
+
+    res.status(201).json(savedOrder) // Respond with the created order
+  } catch (error) {
+    console.error('Error creating order:', error)
+    res.status(500).json({ error: 'Internal Server Error' })
   }
 })
 

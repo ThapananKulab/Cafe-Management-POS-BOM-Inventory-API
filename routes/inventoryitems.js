@@ -118,8 +118,6 @@ router.delete('/inventory/delete/:inventoryItemId', async (req, res) => {
         message: 'Cannot delete: This inventory item is being used in recipes.',
       })
     }
-
-    // If not used in any recipe, proceed with deletion
     const deletedInventoryItem = await InventoryItem.findByIdAndDelete(
       inventoryItemId
     )
@@ -136,21 +134,21 @@ router.delete('/inventory/delete/:inventoryItemId', async (req, res) => {
   }
 })
 
-router.patch('/update-order', async (req, res) => {
-  try {
-    const { orderUpdates } = req.body
-    for (const { id, newPosition } of orderUpdates) {
-      console.log(`Updating item ${id} to new order ${newPosition}`)
-      await InventoryItem.findByIdAndUpdate(id, {
-        $set: { order: newPosition },
-      })
-    }
+// router.patch('/update-order', async (req, res) => {
+//   try {
+//     const { orderUpdates } = req.body
+//     for (const { id, newPosition } of orderUpdates) {
+//       console.log(`Updating item ${id} to new order ${newPosition}`)
+//       await InventoryItem.findByIdAndUpdate(id, {
+//         $set: { order: newPosition },
+//       })
+//     }
 
-    res.status(200).json({ message: 'Orders updated successfully' })
-  } catch (error) {
-    res.status(500).json({ message: error.message })
-  }
-})
+//     res.status(200).json({ message: 'Orders updated successfully' })
+//   } catch (error) {
+//     res.status(500).json({ message: error.message })
+//   }
+// })
 
 // router.get('/check-name-exists', async (req, res) => {
 //   const { name, excludeId } = req.query

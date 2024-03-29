@@ -283,3 +283,6 @@ app.use('/api/test', test)
 
 const employees = require('./routes/employees')
 app.use('/api/employees', employees)
+
+const saleorder = require('./routes/saleorder')
+app.use('/api/saleorder', saleorder)

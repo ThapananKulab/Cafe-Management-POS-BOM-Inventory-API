@@ -2,7 +2,7 @@ const express = require('express')
 const router = express.Router()
 const SaleOrder = require('../models/SaleOrder.js')
 
-app.post('/saleOrders', async (req, res) => {
+router.post('/saleOrders', async (req, res) => {
   try {
     const saleOrder = new SaleOrder(req.body)
     const savedSaleOrder = await saleOrder.save()
@@ -12,7 +12,7 @@ app.post('/saleOrders', async (req, res) => {
   }
 })
 
-app.get('/saleOrders', async (req, res) => {
+router.get('/saleOrders', async (req, res) => {
   try {
     const saleOrders = await SaleOrder.find()
     res.json(saleOrders)

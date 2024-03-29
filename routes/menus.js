@@ -8,7 +8,7 @@ const storage = multer.diskStorage({})
 const parser = multer({ storage: storage })
 
 router.post('/addMenu', parser.single('image'), async (req, res) => {
-  const { name, description, price, recipe } = req.body
+  const { name, description, price, sweetLevel, type, recipe } = req.body
 
   if (!req.file) {
     return res
@@ -27,10 +27,11 @@ router.post('/addMenu', parser.single('image'), async (req, res) => {
       name,
       description,
       price,
+      sweetLevel,
+      type,
       recipe,
       image: result.secure_url,
     })
-
     const savedItem = await menuItem.save()
     res.status(201).json({
       success: true,
@@ -44,7 +45,7 @@ router.post('/addMenu', parser.single('image'), async (req, res) => {
 
 router.get('/allMenus', async (req, res) => {
   try {
-    const menuItems = await Menu.find().populate('recipe') // Use .populate('recipe') if you want to include recipe details based on the recipe ID
+    const menuItems = await Menu.find().populate('recipe')
     res.status(200).json(menuItems)
   } catch (error) {
     res.status(500).json({ message: error.message })
@@ -105,16 +106,17 @@ router.get('/checkName', async (req, res) => {
 
 router.put('/:id', parser.single('image'), async (req, res) => {
   const { id } = req.params
-  const { name, description, price, recipe } = req.body
+  const { name, description, price, sweetLevel, type, recipe } = req.body
 
   try {
     let updatedData = {
       name,
       description,
       price,
+      sweetLevel, // Ensure this is included
+      type, // Ensure this is included
       recipe,
     }
-
     if (req.file) {
       const imageUrl = req.file.path
       const result = await cloudinary.uploader.upload(imageUrl, {

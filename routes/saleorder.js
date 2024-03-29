@@ -15,7 +15,6 @@ router.post('/saleOrders', async (req, res) => {
       notes,
     })
 
-    // Save the new order to the database
     const savedOrder = await newOrder.save()
 
     res.status(201).json(savedOrder) // Respond with the created order

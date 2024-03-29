@@ -3,7 +3,6 @@ const router = express.Router()
 const Recipe = require('../models/Recipe')
 const InventoryItem = require('../models/InventoryItem.js')
 
-// Fetch all inventory items
 router.get('/all', async (req, res) => {
   try {
     const items = await InventoryItem.find()

@@ -7,7 +7,7 @@ const MenuSchema = new mongoose.Schema({
   sweetLevel: {
     type: String,
     required: true,
-    enum: ['ปกติ', 'หวานน้อย', 'หวานมาก'], // กำหนดระดับความหวาน
+    enum: ['ปกติ', 'หวานน้อย', 'หวานมาก', 'ทั่วไป'], // กำหนดระดับความหวาน
   },
   recipe: {
     type: mongoose.Schema.Types.ObjectId,
@@ -17,7 +17,7 @@ const MenuSchema = new mongoose.Schema({
   type: {
     type: String,
     required: true,
-    enum: ['ร้อน', 'เย็น', 'ปั่น'],
+    enum: ['ร้อน', 'เย็น', 'ปั่น', 'ทั่วไป'],
   },
   image: { type: String, required: true },
 })

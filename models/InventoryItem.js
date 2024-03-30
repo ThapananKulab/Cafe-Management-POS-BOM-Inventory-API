@@ -7,7 +7,7 @@ const inventoryItemSchema = new mongoose.Schema({
   unit: {
     type: String,
     required: true,
-    enum: ['กรัม', 'มิลลิลิตร', 'ชิ้น', 'ซอง'],
+    enum: ['กรัม', 'มิลลิลิตร', 'ชิ้น', 'ซอง', 'ทั่วไป'],
   },
   realquantity: { type: Number, required: true },
   quantityInStock: { type: Number, required: true },

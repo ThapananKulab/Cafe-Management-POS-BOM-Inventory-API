@@ -32,7 +32,7 @@ const SaleOrderSchema = new mongoose.Schema({
   paymentMethod: {
     type: String,
     required: true,
-    enum: ['Cash', 'PromptPay'],
+    enum: ['เงินสด', 'PromptPay'],
   },
   notes: { type: String },
 })

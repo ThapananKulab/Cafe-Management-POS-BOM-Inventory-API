@@ -1,5 +1,5 @@
 const mongoose = require('mongoose')
-const { ObjectId } = mongoose.Types // Import ObjectId from mongoose
+const { ObjectId } = mongoose.Types
 
 const SaleOrderSchema = new mongoose.Schema({
   orderNumber: { type: String, default: () => new ObjectId().toString() },

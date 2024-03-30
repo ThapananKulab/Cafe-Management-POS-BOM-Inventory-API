@@ -17,7 +17,7 @@ router.post('/saleOrders', async (req, res) => {
 
     const savedOrder = await newOrder.save()
 
-    res.status(201).json(savedOrder) // Respond with the created order
+    res.status(201).json(savedOrder)
   } catch (error) {
     console.error('Error creating order:', error)
     res.status(500).json({ error: 'Internal Server Error' })
@@ -87,6 +87,35 @@ router.get('/saleOrders/date/:formattedDate', async (req, res) => {
   try {
     const { formattedDate } = req.params
     const saleOrders = await SaleOrder.find({ date: formattedDate })
+
+    res.json(saleOrders)
+  } catch (error) {
+    res.status(500).json({ message: error.message })
+  }
+})
+
+router.get('/saleOrders/date/:formattedDate', async (req, res) => {
+  try {
+    const { formattedDate } = req.params
+
+    // Convert formattedDate to Date object
+    const date = new Date(formattedDate)
+
+    // Set start of the day
+    const startOfDay = new Date(date)
+    startOfDay.setHours(0, 0, 0, 0)
+
+    // Set end of the day
+    const endOfDay = new Date(date)
+    endOfDay.setHours(23, 59, 59, 999)
+
+    // Find orders within the specified date range
+    const saleOrders = await SaleOrder.find({
+      date: {
+        $gte: startOfDay,
+        $lte: endOfDay,
+      },
+    })
 
     res.json(saleOrders)
   } catch (error) {

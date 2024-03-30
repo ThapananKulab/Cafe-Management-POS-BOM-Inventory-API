@@ -23,6 +23,18 @@ router.get('/:id', (req, res, next) => {
     })
 })
 
+// router.get('/saleOrders', async (req, res) => {
+//   try {
+//     const saleOrders = await SaleOrder.find().populate(
+//       'user',
+//       'username firstname lastname'
+//     )
+//     res.json(saleOrders)
+//   } catch (error) {
+//     res.status(500).json({ message: error.message })
+//   }
+// })
+
 router.post('/', (req, res, next) => {
   User.create(req.body)
     .then((user) => {

@@ -65,4 +65,23 @@ router.get('/status', async (req, res) => {
   }
 })
 
+router.get('/statuses', async (req, res) => {
+  try {
+    // Fetch all sale rounds without sorting
+    const saleRounds = await SaleRound.find()
+
+    if (saleRounds.length === 0) {
+      return res.status(404).json({ message: 'No sale rounds found.' })
+    }
+
+    res.status(200).json({
+      message: 'Sale round statuses fetched successfully.',
+      saleRounds,
+    })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ message: 'Error fetching sale round statuses.' })
+  }
+})
+
 module.exports = router

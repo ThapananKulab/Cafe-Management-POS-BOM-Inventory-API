@@ -83,4 +83,15 @@ router.post('/orders', async (req, res) => {
   }
 })
 
+router.get('/saleOrders/date/:formattedDate', async (req, res) => {
+  try {
+    const { formattedDate } = req.params
+    const saleOrders = await SaleOrder.find({ date: formattedDate })
+
+    res.json(saleOrders)
+  } catch (error) {
+    res.status(500).json({ message: error.message })
+  }
+})
+
 module.exports = router

@@ -1,5 +1,5 @@
-const mongoose = require('mongoose')
-const { ObjectId } = mongoose.Types
+const mongoose = require("mongoose");
+const { ObjectId } = mongoose.Types;
 
 const SaleOrderSchema = new mongoose.Schema({
   orderNumber: { type: String, default: () => new ObjectId().toString() },
@@ -9,7 +9,11 @@ const SaleOrderSchema = new mongoose.Schema({
     {
       menuItem: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Menu',
+        ref: "Menu",
+        required: true,
+      },
+      name: {
+        type: String,
         required: true,
       },
       quantity: {
@@ -26,15 +30,15 @@ const SaleOrderSchema = new mongoose.Schema({
   status: {
     type: String,
     required: true,
-    enum: ['Pending', 'Completed', 'Cancelled'],
-    default: 'Pending',
+    enum: ["Pending", "Completed", "Cancelled"],
+    default: "Pending",
   },
   paymentMethod: {
     type: String,
     required: true,
-    enum: ['เงินสด', 'PromptPay'],
+    enum: ["เงินสด", "PromptPay"],
   },
   notes: { type: String },
-})
+});
 
-module.exports = mongoose.model('SaleOrder', SaleOrderSchema)
+module.exports = mongoose.model("SaleOrder", SaleOrderSchema);

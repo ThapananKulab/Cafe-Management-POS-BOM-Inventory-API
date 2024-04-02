@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const SaleOrder = require("../models/SaleOrder.js");
+const InventoryItem = require("../models/InventoryItem");
 
 router.post("/saleOrders", async (req, res) => {
   try {
@@ -157,6 +158,37 @@ router.post("/:orderId/cancel", async (req, res) => {
     res.json(updatedOrder);
   } catch (error) {
     console.error("Error cancelling order:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+router.post("/saleOrders/:orderId/deductStock", async (req, res) => {
+  const { orderId } = req.params;
+
+  try {
+    // Find the sale order by ID
+    const saleOrder = await SaleOrder.findById(orderId);
+
+    // Loop through the items in the sale order and deduct the quantities from the inventory
+    for (const item of saleOrder.items) {
+      const inventoryItem = await InventoryItem.findById(item.menuItem);
+
+      // Check if the inventory item exists
+      if (!inventoryItem) {
+        return res.status(404).json({ message: "Inventory item not found." });
+      }
+
+      // Deduct the quantity from the inventory
+      inventoryItem.quantityInStock -= item.quantity;
+      inventoryItem.useInStock += item.quantity;
+
+      // Save the updated inventory item
+      await inventoryItem.save();
+    }
+
+    res.status(200).json({ message: "Stock deducted successfully." });
+  } catch (error) {
+    console.error("Error deducting stock:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });

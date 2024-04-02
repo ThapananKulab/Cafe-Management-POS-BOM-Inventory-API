@@ -20,7 +20,6 @@ const inventoryItemSchema = new mongoose.Schema({
   unitPrice: { type: Number, required: true },
 });
 
-// เพิ่ม method สำหรับการปรับปรุงสต็อก
 inventoryItemSchema.methods.adjustStock = async function (amount) {
   this.quantityInStock += amount;
   await this.save();

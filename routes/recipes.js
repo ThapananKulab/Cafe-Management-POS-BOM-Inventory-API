@@ -36,16 +36,12 @@ router.post("/add", async (req, res) => {
 router.delete("/delete/:id", async (req, res) => {
   try {
     const { id } = req.params;
-
-    // Check if the recipe is used in any menu
     const isUsedInMenu = await Menu.exists({ recipe: id });
     if (isUsedInMenu) {
       return res.status(400).json({
         message: "The recipe is used in a menu and cannot be deleted.",
       });
     }
-
-    // If the recipe is not used in any menu, delete it
     const deletedRecipe = await Recipe.findByIdAndDelete(id);
     if (!deletedRecipe) {
       return res

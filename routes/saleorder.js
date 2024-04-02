@@ -4,7 +4,8 @@ const SaleOrder = require("../models/SaleOrder.js");
 
 router.post("/saleOrders", async (req, res) => {
   try {
-    const { user, items, total, status, paymentMethod, notes } = req.body;
+    const { user, items, total, status, paymentMethod, notes, change } =
+      req.body;
 
     const newOrder = new SaleOrder({
       user,
@@ -13,6 +14,7 @@ router.post("/saleOrders", async (req, res) => {
       status,
       paymentMethod,
       notes,
+      change,
     });
 
     const savedOrder = await newOrder.save();

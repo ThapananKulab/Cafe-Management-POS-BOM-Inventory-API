@@ -39,6 +39,7 @@ const SaleOrderSchema = new mongoose.Schema({
     enum: ["เงินสด", "PromptPay"],
   },
   notes: { type: String },
+  change: { type: Number },
 });
 
 module.exports = mongoose.model("SaleOrder", SaleOrderSchema);

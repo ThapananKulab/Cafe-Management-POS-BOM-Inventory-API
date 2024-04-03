@@ -6,7 +6,16 @@ const inventoryItemSchema = new mongoose.Schema({
   name: { type: String, required: true },
   type: {
     type: String,
-    enum: ['ถุง', 'กระปุก', 'ทั่วไป', 'กระป๋อง', 'แก้ว', 'ทั่วไป'],
+    enum: [
+      'ถุง',
+      'กระปุก',
+      'ทั่วไป',
+      'กระป๋อง',
+      'แก้ว',
+      'ทั่วไป',
+      'ขวด',
+      'ถัง',
+    ],
   },
   unit: {
     type: String,

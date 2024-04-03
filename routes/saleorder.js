@@ -144,6 +144,32 @@ router.post('/:orderId/accept', async (req, res) => {
   }
 })
 
+// router.post('/:orderId/accept', async (req, res) => {
+//   const { orderId } = req.params
+
+//   try {
+//     // Check stock availability
+//     const stockDeducted = await deductStock(orderId)
+
+//     if (stockDeducted) {
+//       // Update order status to 'Completed' if stock deduction is successful
+//       const updatedOrder = await SaleOrder.findByIdAndUpdate(
+//         orderId,
+//         { status: 'Completed' },
+//         { new: true }
+//       )
+//       res.json(updatedOrder)
+//     } else {
+//       // หากสต็อกไม่เพียงพอ, แสดงว่าการหักล้างสต็อกล้มเหลว
+//       // ไม่มีการอัปเดตสถานะของ Order ในฐานข้อมูล และส่งคืนการแจ้งเตือนผ่าน API response
+//       res.status(400).json({ message: 'Stock ไม่เพียงพอ' })
+//     }
+//   } catch (error) {
+//     console.error('Error accepting order:', error)
+//     res.status(500).json({ error: 'Internal Server Error' })
+//   }
+// })
+
 router.post('/:orderId/cancel', async (req, res) => {
   const { orderId } = req.params
 

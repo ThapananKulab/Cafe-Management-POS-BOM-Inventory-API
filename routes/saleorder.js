@@ -188,6 +188,57 @@ router.post('/:orderId/cancel', async (req, res) => {
   }
 })
 
+// router.post('/:orderId/accept', async (req, res) => {
+//   const { orderId } = req.params
+
+//   try {
+//     console.log(`กำลังประมวลผลออเดอร์ ID: ${orderId}`) // Log การเริ่มต้นประมวลผล
+
+//     const deductResult = await deductStock(orderId)
+//     console.log(
+//       `ผลลัพธ์การหักสต็อกสำหรับออเดอร์ ID: ${orderId} คือ: `,
+//       deductResult
+//     )
+
+//     if (deductResult.success) {
+//       console.log(
+//         `สต็อกเพียงพอ, กำลังอัปเดตสถานะเป็น 'Completed' สำหรับออเดอร์ ID: ${orderId}`
+//       )
+//       const updatedOrder = await SaleOrder.findByIdAndUpdate(
+//         orderId,
+//         { status: 'Completed' },
+//         { new: true }
+//       )
+//       console.log(
+//         `อัปเดตสถานะเป็น 'Completed' สำเร็จสำหรับออเดอร์ ID: ${orderId}`,
+//         updatedOrder
+//       )
+//       res.json(updatedOrder)
+//     } else {
+//       console.log(
+//         `สต็อกไม่เพียงพอ, กำลังอัปเดตสถานะเป็น 'Pending' สำหรับออเดอร์ ID: ${orderId}`
+//       )
+//       const updatedOrder = await SaleOrder.findByIdAndUpdate(
+//         orderId,
+//         { status: 'Pending' },
+//         { new: true }
+//       )
+//       console.log(
+//         `อัปเดตสถานะเป็น 'Pending' สำเร็จสำหรับออเดอร์ ID: ${orderId}`,
+//         updatedOrder
+//       )
+//       res.status(400).json({
+//         message:
+//           deductResult.message || 'Stock ไม่เพียงพอ, Order ถูกตั้งเป็น Pending',
+//         updatedOrder,
+//       })
+//     }
+//   } catch (error) {
+//     console.error('Error accepting order:', error)
+//     res.status(500).json({ error: 'Internal Server Error' })
+//   }
+// })
+
 // router.post('/saleOrders/:orderId/deductStock', async (req, res) => {
 //   const { orderId } = req.params
 

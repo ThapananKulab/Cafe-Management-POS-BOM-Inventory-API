@@ -12,6 +12,16 @@ router.get("/all", async (req, res) => {
   }
 });
 
+router.get("/dashboard/all", async (req, res) => {
+  try {
+    const items = await InventoryItem.find();
+    const itemCount = items.length;
+    res.json({ itemCount });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Add a new inventory item
 router.post("/add", async (req, res) => {
   const { name, type, unit, realquantity, quantityInStock, unitPrice } =

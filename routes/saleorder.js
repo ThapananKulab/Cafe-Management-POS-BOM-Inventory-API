@@ -148,17 +148,14 @@ router.get("/dashboard/mostPurchasedMenuItems", async (req, res) => {
 router.get("/saleOrders/currentdate", async (req, res) => {
   try {
     const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0); // Sets the time to the start of the day
-
+    startOfToday.setHours(0, 0, 0, 0);
     const endOfToday = new Date();
-    endOfToday.setHours(23, 59, 59, 999); // Sets the time to the end of the day
-
-    // Find orders where the date is within the current day
+    endOfToday.setHours(23, 59, 59, 999);
     const saleOrders = await SaleOrder.find({
       date: {
         // Use the 'date' field
-        $gte: startOfToday, // Greater than or equal to the start of today
-        $lte: endOfToday, // Less than or equal to the end of today
+        $gte: startOfToday,
+        $lte: endOfToday,
       },
     });
 

@@ -1,12 +1,12 @@
-const express = require('express')
-const router = express.Router()
-const SaleOrder = require('../models/SaleOrder.js')
-const InventoryItem = require('../models/InventoryItem')
+const express = require("express");
+const router = express.Router();
+const SaleOrder = require("../models/SaleOrder.js");
+const InventoryItem = require("../models/InventoryItem");
 
-router.post('/saleOrders', async (req, res) => {
+router.post("/saleOrders", async (req, res) => {
   try {
     const { user, items, total, status, paymentMethod, notes, change } =
-      req.body
+      req.body;
 
     const newOrder = new SaleOrder({
       user,
@@ -16,34 +16,143 @@ router.post('/saleOrders', async (req, res) => {
       paymentMethod,
       notes,
       change,
-    })
+    });
 
-    const savedOrder = await newOrder.save()
+    const savedOrder = await newOrder.save();
 
-    res.status(201).json(savedOrder)
+    res.status(201).json(savedOrder);
   } catch (error) {
-    console.error('Error creating order:', error)
-    res.status(500).json({ error: 'Internal Server Error' })
+    console.error("Error creating order:", error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
-})
+});
 
-router.get('/saleOrders', async (req, res) => {
+router.get("/saleOrders", async (req, res) => {
   try {
-    const saleOrders = await SaleOrder.find()
-    res.json(saleOrders)
+    const saleOrders = await SaleOrder.find();
+    res.json(saleOrders);
   } catch (error) {
-    res.status(500).json({ message: error.message })
+    res.status(500).json({ message: error.message });
   }
-})
+});
 
-router.get('/saleOrders/currentdate', async (req, res) => {
+router.get("/dashboard/saleOrders", async (req, res) => {
+  try {
+    const saleOrders = await SaleOrder.find({
+      status: { $nin: ["Pending", "Cancelled"] },
+    });
+    const numberOfOrders = saleOrders.length; // นับจำนวนออเดอร์ทั้งหมดที่มีสถานะไม่ใช่ "Pending" หรือ "Cancelled"
+    res.json({ numberOfOrders, saleOrders }); // ส่งกลับจำนวนออเดอร์และข้อมูลออเดอร์ที่ตรงเงื่อนไข
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.get("/all/saleOrders", async (req, res) => {
+  try {
+    const saleOrders = await SaleOrder.find();
+    const numberOfOrders = saleOrders.length; // นับจำนวนออเดอร์ทั้งหมด
+    res.json({ numberOfOrders, saleOrders }); // ส่งกลับจำนวนออเดอร์และข้อมูลออเดอร์ทั้งหมด
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.get("/dashboard/dailySales", async (req, res) => {
+  try {
+    const today = new Date();
+    const startOfDay = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate()
+    );
+    const endOfDay = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate() + 1
+    );
+    const dailySales = await SaleOrder.aggregate([
+      {
+        $match: {
+          status: { $nin: ["Pending", "Cancelled"] },
+          date: { $gte: startOfDay, $lt: endOfDay },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalSales: { $sum: "$total" }, // คำนวณรวมยอดขาย
+        },
+      },
+    ]);
+
+    if (dailySales.length === 0) {
+      return res.status(404).json({ message: "No sales found for today" });
+    }
+
+    res.json({ totalSales: dailySales[0].totalSales });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.get("/dashboard/mostPurchasedMenuItems", async (req, res) => {
+  try {
+    const orders = await SaleOrder.find({
+      status: { $nin: ["Pending", "Cancelled"] },
+    });
+
+    if (orders.length === 0) {
+      return res.status(404).json({ message: "No orders found" });
+    }
+
+    // Count the quantity of each menu item sold
+    const menuItemsMap = new Map();
+    orders.forEach((order) => {
+      order.items.forEach((item) => {
+        const menuItemId = item.menuItem; // Get menuItem ID from order item
+        const menuItem = item.name; // Get menuItem name from order item
+        if (menuItemId && menuItem) {
+          // Check if menuItemId and menuItem exist
+          if (!menuItemsMap.has(menuItem)) {
+            menuItemsMap.set(menuItem, 0);
+          }
+          menuItemsMap.set(
+            menuItem,
+            menuItemsMap.get(menuItem) + item.quantity
+          );
+        }
+      });
+    });
+
+    // Convert map to array of objects
+    const mostPurchasedMenuItemsData = Array.from(menuItemsMap.entries()).map(
+      ([name, quantity]) => ({
+        name,
+        quantity,
+      })
+    );
+
+    // Sort the mostPurchasedMenuItemsData by quantity in descending order
+    mostPurchasedMenuItemsData.sort((a, b) => b.quantity - a.quantity);
+
+    // Take top 10 most purchased menu items
+    const top10MostPurchasedMenuItems = mostPurchasedMenuItemsData.slice(0, 10);
+
+    res.json(top10MostPurchasedMenuItems);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.get("/saleOrders/currentdate", async (req, res) => {
   try {
     // Set the start and end of the current day
-    const startOfToday = new Date()
-    startOfToday.setHours(0, 0, 0, 0) // Sets the time to the start of the day
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0); // Sets the time to the start of the day
 
-    const endOfToday = new Date()
-    endOfToday.setHours(23, 59, 59, 999) // Sets the time to the end of the day
+    const endOfToday = new Date();
+    endOfToday.setHours(23, 59, 59, 999); // Sets the time to the end of the day
 
     // Find orders where the date is within the current day
     const saleOrders = await SaleOrder.find({
@@ -52,18 +161,18 @@ router.get('/saleOrders/currentdate', async (req, res) => {
         $gte: startOfToday, // Greater than or equal to the start of today
         $lte: endOfToday, // Less than or equal to the end of today
       },
-    })
+    });
 
-    res.json(saleOrders)
+    res.json(saleOrders);
   } catch (error) {
-    res.status(500).json({ message: error.message })
+    res.status(500).json({ message: error.message });
   }
-})
+});
 
-router.post('/orders', async (req, res) => {
+router.post("/orders", async (req, res) => {
   try {
     const { orderNumber, user, items, total, status, paymentMethod, notes } =
-      req.body
+      req.body;
 
     // Create a new SaleOrder document
     const newOrder = new SaleOrder({
@@ -74,43 +183,43 @@ router.post('/orders', async (req, res) => {
       status,
       paymentMethod,
       notes,
-    })
+    });
 
     // Save the new order to the database
-    const savedOrder = await newOrder.save()
+    const savedOrder = await newOrder.save();
 
-    res.status(201).json(savedOrder) // Respond with the created order
+    res.status(201).json(savedOrder); // Respond with the created order
   } catch (error) {
-    console.error('Error creating order:', error)
-    res.status(500).json({ error: 'Internal Server Error' })
+    console.error("Error creating order:", error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
-})
+});
 
-router.get('/saleOrders/date/:formattedDate', async (req, res) => {
+router.get("/saleOrders/date/:formattedDate", async (req, res) => {
   try {
-    const { formattedDate } = req.params
-    const saleOrders = await SaleOrder.find({ date: formattedDate })
+    const { formattedDate } = req.params;
+    const saleOrders = await SaleOrder.find({ date: formattedDate });
 
-    res.json(saleOrders)
+    res.json(saleOrders);
   } catch (error) {
-    res.status(500).json({ message: error.message })
+    res.status(500).json({ message: error.message });
   }
-})
+});
 
-router.get('/saleOrders/date/:formattedDate', async (req, res) => {
+router.get("/saleOrders/date/:formattedDate", async (req, res) => {
   try {
-    const { formattedDate } = req.params
+    const { formattedDate } = req.params;
 
     // Convert formattedDate to Date object
-    const date = new Date(formattedDate)
+    const date = new Date(formattedDate);
 
     // Set start of the day
-    const startOfDay = new Date(date)
-    startOfDay.setHours(0, 0, 0, 0)
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
 
     // Set end of the day
-    const endOfDay = new Date(date)
-    endOfDay.setHours(23, 59, 59, 999)
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
 
     // Find orders within the specified date range
     const saleOrders = await SaleOrder.find({
@@ -118,265 +227,108 @@ router.get('/saleOrders/date/:formattedDate', async (req, res) => {
         $gte: startOfDay,
         $lte: endOfDay,
       },
-    })
+    });
 
-    res.json(saleOrders)
+    res.json(saleOrders);
   } catch (error) {
-    res.status(500).json({ message: error.message })
+    res.status(500).json({ message: error.message });
   }
-})
+});
 
-router.post('/:orderId/accept', async (req, res) => {
-  const { orderId } = req.params
+router.post("/:orderId/accept", async (req, res) => {
+  const { orderId } = req.params;
 
   try {
     // Update order status to 'Completed'
     const updatedOrder = await SaleOrder.findByIdAndUpdate(
       orderId,
-      { status: 'Completed' },
+      { status: "Completed" },
       { new: true }
-    )
+    );
 
-    res.json(updatedOrder)
+    res.json(updatedOrder);
   } catch (error) {
-    console.error('Error accepting order:', error)
-    res.status(500).json({ error: 'Internal Server Error' })
+    console.error("Error accepting order:", error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
-})
+});
 
-// router.post('/:orderId/accept', async (req, res) => {
-//   const { orderId } = req.params
-
-//   try {
-//     // Check stock availability
-//     const stockDeducted = await deductStock(orderId)
-
-//     if (stockDeducted) {
-//       // Update order status to 'Completed' if stock deduction is successful
-//       const updatedOrder = await SaleOrder.findByIdAndUpdate(
-//         orderId,
-//         { status: 'Completed' },
-//         { new: true }
-//       )
-//       res.json(updatedOrder)
-//     } else {
-//       // หากสต็อกไม่เพียงพอ, แสดงว่าการหักล้างสต็อกล้มเหลว
-//       // ไม่มีการอัปเดตสถานะของ Order ในฐานข้อมูล และส่งคืนการแจ้งเตือนผ่าน API response
-//       res.status(400).json({ message: 'Stock ไม่เพียงพอ' })
-//     }
-//   } catch (error) {
-//     console.error('Error accepting order:', error)
-//     res.status(500).json({ error: 'Internal Server Error' })
-//   }
-// })
-
-router.post('/:orderId/cancel', async (req, res) => {
-  const { orderId } = req.params
+router.post("/:orderId/cancel", async (req, res) => {
+  const { orderId } = req.params;
 
   try {
     // Update order status to 'Cancelled'
     const updatedOrder = await SaleOrder.findByIdAndUpdate(
       orderId,
-      { status: 'Cancelled' },
+      { status: "Cancelled" },
       { new: true }
-    )
+    );
 
-    res.json(updatedOrder)
+    res.json(updatedOrder);
   } catch (error) {
-    console.error('Error cancelling order:', error)
-    res.status(500).json({ error: 'Internal Server Error' })
+    console.error("Error cancelling order:", error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
-})
+});
 
-// router.post('/:orderId/accept', async (req, res) => {
-//   const { orderId } = req.params
-
-//   try {
-//     console.log(`กำลังประมวลผลออเดอร์ ID: ${orderId}`) // Log การเริ่มต้นประมวลผล
-
-//     const deductResult = await deductStock(orderId)
-//     console.log(
-//       `ผลลัพธ์การหักสต็อกสำหรับออเดอร์ ID: ${orderId} คือ: `,
-//       deductResult
-//     )
-
-//     if (deductResult.success) {
-//       console.log(
-//         `สต็อกเพียงพอ, กำลังอัปเดตสถานะเป็น 'Completed' สำหรับออเดอร์ ID: ${orderId}`
-//       )
-//       const updatedOrder = await SaleOrder.findByIdAndUpdate(
-//         orderId,
-//         { status: 'Completed' },
-//         { new: true }
-//       )
-//       console.log(
-//         `อัปเดตสถานะเป็น 'Completed' สำเร็จสำหรับออเดอร์ ID: ${orderId}`,
-//         updatedOrder
-//       )
-//       res.json(updatedOrder)
-//     } else {
-//       console.log(
-//         `สต็อกไม่เพียงพอ, กำลังอัปเดตสถานะเป็น 'Pending' สำหรับออเดอร์ ID: ${orderId}`
-//       )
-//       const updatedOrder = await SaleOrder.findByIdAndUpdate(
-//         orderId,
-//         { status: 'Pending' },
-//         { new: true }
-//       )
-//       console.log(
-//         `อัปเดตสถานะเป็น 'Pending' สำเร็จสำหรับออเดอร์ ID: ${orderId}`,
-//         updatedOrder
-//       )
-//       res.status(400).json({
-//         message:
-//           deductResult.message || 'Stock ไม่เพียงพอ, Order ถูกตั้งเป็น Pending',
-//         updatedOrder,
-//       })
-//     }
-//   } catch (error) {
-//     console.error('Error accepting order:', error)
-//     res.status(500).json({ error: 'Internal Server Error' })
-//   }
-// })
-
-// router.post('/saleOrders/:orderId/deductStock', async (req, res) => {
-//   const { orderId } = req.params
-
-//   try {
-//     // Find the sale order by ID
-//     const saleOrder = await SaleOrder.findById(orderId)
-//     for (const item of saleOrder.items) {
-//       const inventoryItem = await InventoryItem.findById(item.menuItem)
-
-//       // Check if the inventory item exists
-//       if (!inventoryItem) {
-//         return res.status(404).json({ message: 'Inventory item not found.' })
-//       }
-
-//       // Deduct the quantity from the inventory
-//       inventoryItem.quantityInStock -= item.quantity
-//       inventoryItem.useInStock += item.quantity
-
-//       // Save the updated inventory item
-//       await inventoryItem.save()
-//     }
-
-//     res.status(200).json({ message: 'Stock deducted successfully.' })
-//   } catch (error) {
-//     console.error('Error deducting stock:', error)
-//     res.status(500).json({ error: 'Internal Server Error' })
-//   }
-// })
-
-router.post('/:orderId/deductStock', async (req, res) => {
-  const { orderId } = req.params
+router.post("/:orderId/deductStock", async (req, res) => {
+  const { orderId } = req.params;
 
   try {
     const saleOrder = await SaleOrder.findById(orderId).populate({
-      path: 'items.menuItem',
+      path: "items.menuItem",
       populate: {
-        path: 'recipe',
-        model: 'Recipe',
+        path: "recipe",
+        model: "Recipe",
       },
-    })
+    });
 
     if (!saleOrder) {
-      return res.status(404).json({ message: 'Sale order not found.' })
+      return res.status(404).json({ message: "Sale order not found." });
     }
 
     for (const item of saleOrder.items) {
-      const menuItem = item.menuItem
+      const menuItem = item.menuItem;
 
       if (!menuItem.recipe || !menuItem.recipe.ingredients) {
-        continue 
+        continue;
       }
 
       for (const ingredient of menuItem.recipe.ingredients) {
         const inventoryItem = await InventoryItem.findById(
           ingredient.inventoryItemId
-        )
+        );
 
         if (!inventoryItem) {
           console.warn(
             `Inventory item not found for ID: ${ingredient.inventoryItemId}`
-          )
-          continue // Skip if the inventory item is not found
+          );
+          continue; // Skip if the inventory item is not found
         }
 
         // Calculate the new quantity in stock and the amount used
-        const quantityUsed = ingredient.quantity * item.quantity
-        const newQuantityInStock = inventoryItem.quantityInStock - quantityUsed
+        const quantityUsed = ingredient.quantity * item.quantity;
+        const newQuantityInStock = inventoryItem.quantityInStock - quantityUsed;
 
         // Check if the new quantity is valid
         if (newQuantityInStock < 0) {
           return res.status(400).json({
             message: `Not enough stock for item ID: ${ingredient.inventoryItemId}.`,
-          })
+          });
         }
 
         // Update the inventory item
-        inventoryItem.quantityInStock = newQuantityInStock
-        inventoryItem.useInStock += quantityUsed // Update useInStock to reflect usage
-        await inventoryItem.save()
+        inventoryItem.quantityInStock = newQuantityInStock;
+        inventoryItem.useInStock += quantityUsed; // Update useInStock to reflect usage
+        await inventoryItem.save();
       }
     }
 
-    res.status(200).json({ message: 'Stock deducted successfully.' })
+    res.status(200).json({ message: "Stock deducted successfully." });
   } catch (error) {
-    console.error('Error deducting stock:', error)
-    res.status(500).json({ error: 'Internal Server Error' })
+    console.error("Error deducting stock:", error);
+    res.status(500).json({ error: "Internal Server Error" });
   }
-})
+});
 
-// router.post('/:orderId/deductStock', async (req, res) => {
-//   const { orderId } = req.params
-
-//   try {
-//     const saleOrder = await SaleOrder.findById(orderId).populate({
-//       path: 'items.menuItem',
-//       populate: {
-//         path: 'recipe',
-//         model: 'Recipe',
-//       },
-//     })
-
-//     if (!saleOrder) {
-//       return res.status(404).json({ message: 'Sale order not found.' })
-//     }
-
-//     for (const item of saleOrder.items) {
-//       const menu = item.menuItem
-
-//       if (!menu.recipe) {
-//         return res
-//           .status(404)
-//           .json({ message: 'Recipe not found for menu item.' })
-//       }
-
-//       // Loop through ingredients in the recipe
-//       for (const ingredient of menu.recipe.ingredients) {
-//         console.log(
-//           'Searching for inventory item with ID:',
-//           ingredient.inventoryItemId
-//         )
-
-//         const inventoryItem = await InventoryItem.findById(
-//           ingredient.inventoryItemId
-//         )
-//         if (!inventoryItem) {
-//           return res.status(404).json({ message: 'Inventory item not found.' })
-//         }
-
-//         inventoryItem.quantityInStock -= ingredient.quantity * item.quantity
-//         await inventoryItem.save()
-//       }
-//     }
-
-//     res.status(200).json({ message: 'Stock deducted successfully.' })
-//   } catch (error) {
-//     console.error('Error deducting stock:', error)
-//     res.status(500).json({ error: 'Internal Server Error' })
-//   }
-// })
-
-module.exports = router
+module.exports = router;

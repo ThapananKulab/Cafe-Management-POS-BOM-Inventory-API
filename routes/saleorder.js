@@ -147,7 +147,6 @@ router.get("/dashboard/mostPurchasedMenuItems", async (req, res) => {
 
 router.get("/saleOrders/currentdate", async (req, res) => {
   try {
-    // Set the start and end of the current day
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0); // Sets the time to the start of the day
 

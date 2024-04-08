@@ -288,7 +288,7 @@ router.post('/:orderId/deductStock', async (req, res) => {
       const menuItem = item.menuItem
 
       if (!menuItem.recipe || !menuItem.recipe.ingredients) {
-        continue // Skip if no recipe or ingredients
+        continue 
       }
 
       for (const ingredient of menuItem.recipe.ingredients) {

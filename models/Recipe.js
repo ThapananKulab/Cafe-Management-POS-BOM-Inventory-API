@@ -9,10 +9,10 @@ const recipeSchema = new mongoose.Schema({
         ref: 'InventoryItem',
         required: true,
       },
+      name: { type: String },
       quantity: { type: Number, required: true },
     },
   ],
-  // method field removed
 })
 
 module.exports = mongoose.model('Recipe', recipeSchema)

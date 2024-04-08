@@ -2,7 +2,6 @@
 const mongoose = require('mongoose')
 
 const inventoryItemSchema = new mongoose.Schema({
-  // order: { type: Number }, // เพิ่มฟิลด์นี้เพื่อเก็บลำดับ
   name: { type: String, required: true },
   type: {
     type: String,
@@ -25,6 +24,11 @@ const inventoryItemSchema = new mongoose.Schema({
   quantityInStock: { type: Number, required: true },
   useInStock: { type: Number, required: true, default: 0 },
   unitPrice: { type: Number, required: true },
+  status: {
+    type: String,
+    enum: ['available', 'unavailable', 'pending'],
+    default: 'available',
+  },
 })
 
 inventoryItemSchema.methods.adjustStock = async function (amount) {

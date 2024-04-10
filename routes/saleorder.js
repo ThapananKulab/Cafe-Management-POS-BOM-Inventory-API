@@ -234,25 +234,22 @@ const checkStockSufficiency = async (orderId) => {
       return false;
     }
 
-    // Check stock sufficiency based on the items in the order
     for (const item of order.items) {
-      // Check if the inventory item is available in sufficient quantity
       const inventoryItem = await InventoryItem.findOne({
         itemId: item.itemId,
       });
       if (!inventoryItem || inventoryItem.quantityInStock < item.quantity) {
-        return false; // Not enough stock available
+        return false;
       }
     }
 
-    return true; // Stock is sufficient for all items in the order
+    return true;
   } catch (error) {
     console.error("Error checking stock sufficiency:", error);
-    return false; // Return false in case of any error
+    return false;
   }
 };
 
-// Now define the /accept route
 router.post("/:orderId/accept", async (req, res) => {
   const { orderId } = req.params;
 
@@ -260,7 +257,6 @@ router.post("/:orderId/accept", async (req, res) => {
     const isStockSufficient = await checkStockSufficiency(orderId);
 
     if (!isStockSufficient) {
-      // If stock is not sufficient, set order status to 'Pending' instead of 'Completed'
       const updatedOrder = await SaleOrder.findByIdAndUpdate(
         orderId,
         { status: "Pending" },

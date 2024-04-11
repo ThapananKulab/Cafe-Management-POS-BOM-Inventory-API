@@ -33,7 +33,9 @@ router.post('/add-user', parser.single('image'), async (req, res) => {
     let publicId = ''
     if (req.file) {
       // Upload image to Cloudinary
-      const result = await cloudinary.uploader.upload(req.file.path, { folder: 'users' })
+      const result = await cloudinary.uploader.upload(req.file.path, {
+        folder: 'users',
+      })
       imageUrl = result.secure_url
       publicId = result.public_id
     }
@@ -66,8 +68,8 @@ router.post('/add-user', parser.single('image'), async (req, res) => {
 })
 
 router.post('/update-profile', parser.single('image'), async (req, res) => {
-  const updateP_id = req.body.updateP_id;
-  const { firstname, lastname, email, phone, address, role } = req.body;
+  const updateP_id = req.body.updateP_id
+  const { firstname, lastname, email, phone, address, role } = req.body
 
   try {
     // Initialize update data object
@@ -78,44 +80,46 @@ router.post('/update-profile', parser.single('image'), async (req, res) => {
       ...(phone && { phone }),
       ...(address && { address }),
       ...(role && { role }),
-    };
+    }
 
     // Check if a file is uploaded
     if (req.file) {
       // Find the user by ID
-      const user = await User.findById(updateP_id);
+      const user = await User.findById(updateP_id)
 
       // Check if the user has a Cloudinary public ID
       if (user && user.cloudinaryPublicId) {
         // Delete the old image from Cloudinary using the public ID
-        await cloudinary.uploader.destroy(user.cloudinaryPublicId);
+        await cloudinary.uploader.destroy(user.cloudinaryPublicId)
       }
 
       // Upload the new image to Cloudinary
-      const result = await cloudinary.uploader.upload(req.file.path, { folder: 'users' });
-      updateData.image = result.secure_url;
+      const result = await cloudinary.uploader.upload(req.file.path, {
+        folder: 'users',
+      })
+      updateData.image = result.secure_url
 
       // Update the user's Cloudinary public ID with the new one
-      updateData.cloudinaryPublicId = result.public_id;
+      updateData.cloudinaryPublicId = result.public_id
     }
 
     // Update the user's profile with the new data
     const updatedUser = await User.findByIdAndUpdate(updateP_id, updateData, {
       new: true,
       runValidators: true,
-    });
+    })
 
     // Check if the user is found
     if (!updatedUser) {
-      return res.status(404).send('User not found');
+      return res.status(404).send('User not found')
     }
 
     // Return the updated user
-    res.json(updatedUser);
+    res.json(updatedUser)
   } catch (error) {
-    console.error('Error updating user:', error);
-    res.status(500).send('Internal Server Error');
+    console.error('Error updating user:', error)
+    res.status(500).send('Internal Server Error')
   }
-});
+})
 
 module.exports = router

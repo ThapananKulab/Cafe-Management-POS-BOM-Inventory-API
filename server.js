@@ -282,3 +282,6 @@ app.use('/api/salerounds', salerounds)
 
 const chatmessage = require('./routes/chatmessage')
 app.use('/api/chatmessage', chatmessage)
+
+const post = require('./routes/post')
+app.use('/api/post', post)

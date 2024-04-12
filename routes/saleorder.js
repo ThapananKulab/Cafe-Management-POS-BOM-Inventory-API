@@ -267,8 +267,6 @@ router.post("/:orderId/accept", async (req, res) => {
         error: "วัตถุดิบใน Stock ไม่เพียงพอ",
       });
     }
-
-    // If stock is sufficient, update order status to 'Completed'
     const updatedOrder = await SaleOrder.findByIdAndUpdate(
       orderId,
       { status: "Completed" },

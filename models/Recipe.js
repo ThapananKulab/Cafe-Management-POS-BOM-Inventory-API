@@ -26,10 +26,10 @@ const recipeSchema = new mongoose.Schema({
           'ถัง',
         ],
       },
-        unit: {
-          type: String,
-          enum: ['กรัม', 'มิลลิลิตร', 'ชิ้น', 'ซอง', 'ทั่วไป'],
-        },
+      unit: {
+        type: String,
+        enum: ['กรัม', 'มิลลิลิตร', 'ชิ้น', 'ซอง', 'ทั่วไป'],
+      },
     },
   ],
   cost: { type: Number },

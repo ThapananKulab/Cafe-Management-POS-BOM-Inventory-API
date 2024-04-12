@@ -1,13 +1,69 @@
-const express = require("express");
-const router = express.Router();
-const moment = require("moment-timezone");
-const SaleOrder = require("../models/SaleOrder.js");
-const InventoryItem = require("../models/InventoryItem");
+const express = require('express')
+const router = express.Router()
+const moment = require('moment-timezone')
+const SaleOrder = require('../models/SaleOrder.js')
+const InventoryItem = require('../models/InventoryItem')
 
-router.post("/saleOrders", async (req, res) => {
+router.post('/:orderId/deductStock', async (req, res) => {
+  const { orderId } = req.params
+
+  try {
+    const saleOrder = await SaleOrder.findById(orderId).populate({
+      path: 'items.menuItem',
+      populate: {
+        path: 'recipe',
+        model: 'Recipe',
+      },
+    })
+
+    if (!saleOrder) {
+      return res.status(404).json({ message: 'Sale order not found.' })
+    }
+
+    for (const item of saleOrder.items) {
+      const menuItem = item.menuItem
+
+      if (!menuItem.recipe || !menuItem.recipe.ingredients) {
+        continue
+      }
+
+      for (const ingredient of menuItem.recipe.ingredients) {
+        const inventoryItem = await InventoryItem.findById(
+          ingredient.inventoryItemId
+        )
+
+        if (!inventoryItem) {
+          console.warn(
+            `Inventory item not found for ID: ${ingredient.inventoryItemId}`
+          )
+          continue
+        }
+
+        const quantityUsed = ingredient.quantity * item.quantity
+        const newQuantityInStock = inventoryItem.quantityInStock - quantityUsed
+
+        // Check if the new quantity is valid
+        if (newQuantityInStock < 0) {
+          return res.status(400).json({
+            message: `Not enough stock for item ID: ${ingredient.inventoryItemId}.`,
+          })
+        }
+        inventoryItem.quantityInStock = newQuantityInStock
+        inventoryItem.useInStock += quantityUsed // Update useInStock to reflect usage
+        await inventoryItem.save()
+      }
+    }
+
+    res.status(200).json({ message: 'Stock deducted successfully.' })
+  } catch (error) {
+    console.error('Error deducting stock:', error)
+    res.status(500).json({ error: 'Internal Server Error' })
+  }
+})
+router.post('/saleOrders', async (req, res) => {
   try {
     const { user, items, total, status, paymentMethod, notes, change } =
-      req.body;
+      req.body
 
     const newOrder = new SaleOrder({
       user,
@@ -17,152 +73,148 @@ router.post("/saleOrders", async (req, res) => {
       paymentMethod,
       notes,
       change,
-    });
+    })
 
-    const savedOrder = await newOrder.save();
+    const savedOrder = await newOrder.save()
 
-    res.status(201).json(savedOrder);
+    res.status(201).json(savedOrder)
   } catch (error) {
-    console.error("Error creating order:", error);
-    res.status(500).json({ error: "Internal Server Error" });
+    console.error('Error creating order:', error)
+    res.status(500).json({ error: 'Internal Server Error' })
   }
-});
+})
 
-router.get("/saleOrders", async (req, res) => {
+router.get('/saleOrders', async (req, res) => {
   try {
-    const saleOrders = await SaleOrder.find();
-    res.json(saleOrders);
+    const saleOrders = await SaleOrder.find()
+    res.json(saleOrders)
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: error.message })
   }
-});
+})
 
-router.get("/dashboard/saleOrders", async (req, res) => {
+router.get('/dashboard/saleOrders', async (req, res) => {
   try {
     const saleOrders = await SaleOrder.find({
-      status: { $nin: ["Pending", "Cancelled"] },
-    });
-    const numberOfOrders = saleOrders.length; // นับจำนวนออเดอร์ทั้งหมดที่มีสถานะไม่ใช่ "Pending" หรือ "Cancelled"
-    res.json({ numberOfOrders, saleOrders }); // ส่งกลับจำนวนออเดอร์และข้อมูลออเดอร์ที่ตรงเงื่อนไข
+      status: { $nin: ['Pending', 'Cancelled'] },
+    })
+    const numberOfOrders = saleOrders.length // นับจำนวนออเดอร์ทั้งหมดที่มีสถานะไม่ใช่ "Pending" หรือ "Cancelled"
+    res.json({ numberOfOrders, saleOrders }) // ส่งกลับจำนวนออเดอร์และข้อมูลออเดอร์ที่ตรงเงื่อนไข
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: error.message })
   }
-});
+})
 
-router.get("/all/saleOrders", async (req, res) => {
+router.get('/all/saleOrders', async (req, res) => {
   try {
-    const saleOrders = await SaleOrder.find();
-    const numberOfOrders = saleOrders.length; // นับจำนวนออเดอร์ทั้งหมด
-    res.json({ numberOfOrders, saleOrders }); // ส่งกลับจำนวนออเดอร์และข้อมูลออเดอร์ทั้งหมด
+    const saleOrders = await SaleOrder.find()
+    const numberOfOrders = saleOrders.length // นับจำนวนออเดอร์ทั้งหมด
+    res.json({ numberOfOrders, saleOrders }) // ส่งกลับจำนวนออเดอร์และข้อมูลออเดอร์ทั้งหมด
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: error.message })
   }
-});
+})
 
-router.get("/dashboard/dailySales", async (req, res) => {
+router.get('/dashboard/dailySales', async (req, res) => {
   try {
     // Get current date in the local time zone (assuming Bangkok time zone)
-    const today = moment().tz("Asia/Bangkok");
+    const today = moment().tz('Asia/Bangkok')
 
     // Calculate start and end of the day in the local time zone
-    const startOfDay = today.clone().startOf("day");
-    const endOfDay = today.clone().endOf("day");
+    const startOfDay = today.clone().startOf('day')
+    const endOfDay = today.clone().endOf('day')
 
     // Query for sales within the specified time range
     const dailySales = await SaleOrder.aggregate([
       {
         $match: {
-          status: { $nin: ["Pending", "Cancelled"] },
+          status: { $nin: ['Pending', 'Cancelled'] },
           date: { $gte: startOfDay.toDate(), $lte: endOfDay.toDate() },
         },
       },
       {
         $group: {
           _id: null,
-          totalSales: { $sum: "$total" },
+          totalSales: { $sum: '$total' },
         },
       },
-    ]);
+    ])
 
     // Check if there are sales for the day
     if (dailySales.length === 0) {
-      return res.status(404).json({ message: "No sales found for today" });
+      return res.status(404).json({ message: 'No sales found for today' })
     }
 
     // Respond with the total sales for the day
-    res.json({ totalSales: dailySales[0].totalSales });
+    res.json({ totalSales: dailySales[0].totalSales })
   } catch (error) {
     // Handle errors
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: error.message })
   }
-});
+})
 
-router.get("/dashboard/mostPurchasedMenuItems", async (req, res) => {
+router.get('/dashboard/mostPurchasedMenuItems', async (req, res) => {
   try {
     const orders = await SaleOrder.find({
-      status: { $nin: ["Pending", "Cancelled"] },
-    });
+      status: { $nin: ['Pending', 'Cancelled'] },
+    })
 
     if (orders.length === 0) {
-      return res.status(404).json({ message: "No orders found" });
+      return res.status(404).json({ message: 'No orders found' })
     }
-    const menuItemsMap = new Map();
+    const menuItemsMap = new Map()
     orders.forEach((order) => {
       order.items.forEach((item) => {
-        const menuItemId = item.menuItem;
-        const menuItem = item.name;
+        const menuItemId = item.menuItem
+        const menuItem = item.name
         if (menuItemId && menuItem) {
           if (!menuItemsMap.has(menuItem)) {
-            menuItemsMap.set(menuItem, 0);
+            menuItemsMap.set(menuItem, 0)
           }
-          menuItemsMap.set(
-            menuItem,
-            menuItemsMap.get(menuItem) + item.quantity
-          );
+          menuItemsMap.set(menuItem, menuItemsMap.get(menuItem) + item.quantity)
         }
-      });
-    });
+      })
+    })
     const mostPurchasedMenuItemsData = Array.from(menuItemsMap.entries()).map(
       ([name, quantity]) => ({
         name,
         quantity,
       })
-    );
-    mostPurchasedMenuItemsData.sort((a, b) => b.quantity - a.quantity);
-    const top10MostPurchasedMenuItems = mostPurchasedMenuItemsData.slice(0, 10);
+    )
+    mostPurchasedMenuItemsData.sort((a, b) => b.quantity - a.quantity)
+    const top10MostPurchasedMenuItems = mostPurchasedMenuItemsData.slice(0, 10)
 
-    res.json(top10MostPurchasedMenuItems);
+    res.json(top10MostPurchasedMenuItems)
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: error.message })
   }
-});
+})
 
-router.get("/saleOrders/currentdate", async (req, res) => {
+router.get('/saleOrders/currentdate', async (req, res) => {
   try {
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
-    const endOfToday = new Date();
-    endOfToday.setHours(23, 59, 59, 999);
+    const startOfToday = new Date()
+    startOfToday.setHours(0, 0, 0, 0)
+    const endOfToday = new Date()
+    endOfToday.setHours(23, 59, 59, 999)
     const saleOrders = await SaleOrder.find({
       date: {
         // Use the 'date' field
         $gte: startOfToday,
         $lte: endOfToday,
       },
-    });
+    })
 
-    res.json(saleOrders);
+    res.json(saleOrders)
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: error.message })
   }
-});
+})
 
-router.post("/orders", async (req, res) => {
+router.post('/orders', async (req, res) => {
   try {
     const { orderNumber, user, items, total, status, paymentMethod, notes } =
-      req.body;
+      req.body
 
-    // Create a new SaleOrder document
     const newOrder = new SaleOrder({
       orderNumber,
       user,
@@ -171,43 +223,42 @@ router.post("/orders", async (req, res) => {
       status,
       paymentMethod,
       notes,
-    });
+    })
 
-    // Save the new order to the database
-    const savedOrder = await newOrder.save();
+    const savedOrder = await newOrder.save()
 
-    res.status(201).json(savedOrder); // Respond with the created order
+    res.status(201).json(savedOrder) // Respond with the created order
   } catch (error) {
-    console.error("Error creating order:", error);
-    res.status(500).json({ error: "Internal Server Error" });
+    console.error('Error creating order:', error)
+    res.status(500).json({ error: 'Internal Server Error' })
   }
-});
+})
 
-router.get("/saleOrders/date/:formattedDate", async (req, res) => {
+router.get('/saleOrders/date/:formattedDate', async (req, res) => {
   try {
-    const { formattedDate } = req.params;
-    const saleOrders = await SaleOrder.find({ date: formattedDate });
+    const { formattedDate } = req.params
+    const saleOrders = await SaleOrder.find({ date: formattedDate })
 
-    res.json(saleOrders);
+    res.json(saleOrders)
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: error.message })
   }
-});
+})
 
-router.get("/saleOrders/date/:formattedDate", async (req, res) => {
+router.get('/saleOrders/date/:formattedDate', async (req, res) => {
   try {
-    const { formattedDate } = req.params;
+    const { formattedDate } = req.params
 
     // Convert formattedDate to Date object
-    const date = new Date(formattedDate);
+    const date = new Date(formattedDate)
 
     // Set start of the day
-    const startOfDay = new Date(date);
-    startOfDay.setHours(0, 0, 0, 0);
+    const startOfDay = new Date(date)
+    startOfDay.setHours(0, 0, 0, 0)
 
     // Set end of the day
-    const endOfDay = new Date(date);
-    endOfDay.setHours(23, 59, 59, 999);
+    const endOfDay = new Date(date)
+    endOfDay.setHours(23, 59, 59, 999)
 
     // Find orders within the specified date range
     const saleOrders = await SaleOrder.find({
@@ -215,148 +266,272 @@ router.get("/saleOrders/date/:formattedDate", async (req, res) => {
         $gte: startOfDay,
         $lte: endOfDay,
       },
-    });
+    })
 
-    res.json(saleOrders);
+    res.json(saleOrders)
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: error.message })
   }
-});
+})
 
 const checkStockSufficiency = async (orderId) => {
   try {
     // Retrieve the order from the database
-    const order = await SaleOrder.findById(orderId);
+    const order = await SaleOrder.findById(orderId)
 
     // Check if the order exists
     if (!order) {
-      console.error("Order not found");
-      return false;
+      console.error('Order not found')
+      return false
     }
 
     for (const item of order.items) {
       const inventoryItem = await InventoryItem.findOne({
         itemId: item.itemId,
-      });
+      })
       if (!inventoryItem || inventoryItem.quantityInStock < item.quantity) {
-        return false;
+        return false
       }
     }
 
-    return true;
+    return true
   } catch (error) {
-    console.error("Error checking stock sufficiency:", error);
-    return false;
+    console.error('Error checking stock sufficiency:', error)
+    return false
   }
-};
+}
 
-router.post("/:orderId/accept", async (req, res) => {
-  const { orderId } = req.params;
+router.post('/:orderId/accept', async (req, res) => {
+  const { orderId } = req.params
 
   try {
-    const isStockSufficient = await checkStockSufficiency(orderId);
+    const isStockSufficient = await checkStockSufficiency(orderId)
 
     if (!isStockSufficient) {
       const updatedOrder = await SaleOrder.findByIdAndUpdate(
         orderId,
-        { status: "Pending" },
+        { status: 'Pending' },
         { new: true }
-      );
+      )
 
       return res.status(400).json({
-        error: "วัตถุดิบใน Stock ไม่เพียงพอ",
-      });
+        error: 'วัตถุดิบใน Stock ไม่เพียงพอ',
+      })
     }
     const updatedOrder = await SaleOrder.findByIdAndUpdate(
       orderId,
-      { status: "Completed" },
+      { status: 'Completed' },
       { new: true }
-    );
+    )
 
     // Return the updated order
-    res.json(updatedOrder);
+    res.json(updatedOrder)
   } catch (error) {
-    console.error("Error accepting order:", error);
-    res.status(500).json({ error: "Internal Server Error" });
+    console.error('Error accepting order:', error)
+    res.status(500).json({ error: 'Internal Server Error' })
   }
-});
+})
 
-router.post("/:orderId/cancel", async (req, res) => {
-  const { orderId } = req.params;
+router.post('/:orderId/cancel', async (req, res) => {
+  const { orderId } = req.params
 
   try {
     // Update order status to 'Cancelled'
     const updatedOrder = await SaleOrder.findByIdAndUpdate(
       orderId,
-      { status: "Cancelled" },
+      { status: 'Cancelled' },
       { new: true }
-    );
+    )
 
-    res.json(updatedOrder);
+    res.json(updatedOrder)
   } catch (error) {
-    console.error("Error cancelling order:", error);
-    res.status(500).json({ error: "Internal Server Error" });
+    console.error('Error cancelling order:', error)
+    res.status(500).json({ error: 'Internal Server Error' })
   }
-});
+})
 
-router.post("/:orderId/deductStock", async (req, res) => {
-  const { orderId } = req.params;
-
+router.get('/dashboard/weeklyTotal', async (req, res) => {
   try {
-    const saleOrder = await SaleOrder.findById(orderId).populate({
-      path: "items.menuItem",
-      populate: {
-        path: "recipe",
-        model: "Recipe",
-      },
-    });
+    const currentDate = new Date().toLocaleString('en-US', {
+      timeZone: 'Asia/Bangkok',
+    })
 
-    if (!saleOrder) {
-      return res.status(404).json({ message: "Sale order not found." });
+    // Convert currentDate string to Date object
+    const currentThaiDate = new Date(currentDate)
+
+    // Calculate start date of the week (Sunday)
+    const startOfWeek = new Date(currentThaiDate)
+    startOfWeek.setDate(currentThaiDate.getDate() - currentThaiDate.getDay())
+
+    // Calculate end date of the week (Saturday)
+    const endOfWeek = new Date(currentThaiDate)
+    endOfWeek.setDate(startOfWeek.getDate() + 6)
+
+    // Query for sale orders within the current week
+    const weeklyOrders = await SaleOrder.find({
+      status: { $nin: ['Pending', 'Cancelled'] },
+      date: { $gte: startOfWeek, $lte: endOfWeek },
+    })
+
+    // Initialize an object to store daily sales
+    const dailySales = {}
+
+    // Loop through each day of the week and initialize daily sales to 0
+    for (let i = 0; i < 7; i++) {
+      const currentDate = new Date(startOfWeek)
+      currentDate.setDate(startOfWeek.getDate() + i)
+      dailySales[currentDate.toISOString().slice(0, 10)] = 0
     }
 
-    for (const item of saleOrder.items) {
-      const menuItem = item.menuItem;
-
-      if (!menuItem.recipe || !menuItem.recipe.ingredients) {
-        continue;
-      }
-
-      for (const ingredient of menuItem.recipe.ingredients) {
-        const inventoryItem = await InventoryItem.findById(
-          ingredient.inventoryItemId
-        );
-
-        if (!inventoryItem) {
-          console.warn(
-            `Inventory item not found for ID: ${ingredient.inventoryItemId}`
-          );
-          continue; // Skip if the inventory item is not found
-        }
-
-        // Calculate the new quantity in stock and the amount used
-        const quantityUsed = ingredient.quantity * item.quantity;
-        const newQuantityInStock = inventoryItem.quantityInStock - quantityUsed;
-
-        // Check if the new quantity is valid
-        if (newQuantityInStock < 0) {
-          return res.status(400).json({
-            message: `Not enough stock for item ID: ${ingredient.inventoryItemId}.`,
-          });
-        }
-
-        // Update the inventory item
-        inventoryItem.quantityInStock = newQuantityInStock;
-        inventoryItem.useInStock += quantityUsed; // Update useInStock to reflect usage
-        await inventoryItem.save();
-      }
+    // Calculate total sales for each day of the week
+    for (const order of weeklyOrders) {
+      const orderDate = new Date(order.date)
+      const orderDateISOString = orderDate.toISOString().slice(0, 10)
+      dailySales[orderDateISOString] += order.total
     }
 
-    res.status(200).json({ message: "Stock deducted successfully." });
+    // Respond with the daily sales for the week
+    res.json({ dailySales })
   } catch (error) {
-    console.error("Error deducting stock:", error);
-    res.status(500).json({ error: "Internal Server Error" });
+    // Handle errors
+    res.status(500).json({ message: error.message })
   }
-});
+})
 
-module.exports = router;
+router.get('/dashboard/previousWeeklyTotal', async (req, res) => {
+  try {
+    const currentDate = new Date().toLocaleString('en-US', {
+      timeZone: 'Asia/Bangkok',
+    })
+    const currentThaiDate = new Date(currentDate)
+
+    const startOfPreviousWeek = new Date(currentThaiDate)
+    startOfPreviousWeek.setDate(
+      currentThaiDate.getDate() - currentThaiDate.getDay() - 7
+    )
+    const endOfPreviousWeek = new Date(startOfPreviousWeek)
+    endOfPreviousWeek.setDate(startOfPreviousWeek.getDate() + 6)
+
+    const previousWeeklyOrders = await SaleOrder.find({
+      status: { $nin: ['Pending', 'Cancelled'] },
+      date: { $gte: startOfPreviousWeek, $lte: endOfPreviousWeek },
+    })
+
+    let previousWeeklyTotalSales = 0
+    for (const order of previousWeeklyOrders) {
+      previousWeeklyTotalSales += order.total
+    }
+
+    res.json({ totalSales: previousWeeklyTotalSales })
+  } catch (error) {
+    // Handle errors
+    res.status(500).json({ message: error.message })
+  }
+})
+
+router.get('/report/dailySales', async (req, res) => {
+  try {
+    const currentDate = new Date().toLocaleString('en-US', {
+      timeZone: 'Asia/Bangkok',
+    })
+    const currentThaiDate = new Date(currentDate)
+    const startOfDay = new Date(currentThaiDate)
+    startOfDay.setHours(0, 0, 0, 0)
+
+    const endOfDay = new Date(currentThaiDate)
+    endOfDay.setHours(23, 59, 59, 999)
+
+    const dailyOrders = await SaleOrder.find({
+      status: { $nin: ['Pending', 'Cancelled'] },
+      date: { $gte: startOfDay, $lte: endOfDay },
+    })
+
+    let totalSales = 0
+    for (const order of dailyOrders) {
+      totalSales += order.total
+    }
+    const formattedDate = currentThaiDate.toISOString().slice(0, 10)
+
+    // Return an array of objects with date and totalSales properties
+    const dailySales = [{ date: formattedDate, totalSales }]
+    res.json({ dailySales })
+  } catch (error) {
+    res.status(500).json({ message: error.message })
+  }
+})
+
+router.get('report/monthlySales', async (req, res) => {
+  try {
+    const currentDate = new Date().toLocaleString('en-US', {
+      timeZone: 'Asia/Bangkok',
+    })
+
+    // Convert currentDate string to Date object
+    const currentThaiDate = new Date(currentDate)
+
+    // Calculate start and end of the month
+    const startOfMonth = new Date(currentThaiDate)
+    startOfMonth.setDate(1)
+    startOfMonth.setHours(0, 0, 0, 0)
+
+    const endOfMonth = new Date(currentThaiDate)
+    endOfMonth.setMonth(endOfMonth.getMonth() + 1)
+    endOfMonth.setDate(0)
+    endOfMonth.setHours(23, 59, 59, 999)
+
+    const monthlyOrders = await SaleOrder.find({
+      status: { $nin: ['Pending', 'Cancelled'] },
+      date: { $gte: startOfMonth, $lte: endOfMonth },
+    })
+
+    // Calculate total sales for the month
+    let totalSales = 0
+    for (const order of monthlyOrders) {
+      totalSales += order.total
+    }
+
+    res.json({ totalSales })
+  } catch (error) {
+    res.status(500).json({ message: error.message })
+  }
+})
+
+router.get('/yearlySales', async (req, res) => {
+  try {
+    const currentDate = new Date().toLocaleString('en-US', {
+      timeZone: 'Asia/Bangkok',
+    })
+
+    // Convert currentDate string to Date object
+    const currentThaiDate = new Date(currentDate)
+
+    // Calculate start and end of the year
+    const startOfYear = new Date(currentThaiDate)
+    startOfYear.setMonth(0)
+    startOfYear.setDate(1)
+    startOfYear.setHours(0, 0, 0, 0)
+
+    const endOfYear = new Date(currentThaiDate)
+    endOfYear.setMonth(11)
+    endOfYear.setDate(31)
+    endOfYear.setHours(23, 59, 59, 999)
+
+    // Query for sale orders within the current year
+    const yearlyOrders = await SaleOrder.find({
+      status: { $nin: ['Pending', 'Cancelled'] },
+      date: { $gte: startOfYear, $lte: endOfYear },
+    })
+
+    // Calculate total sales for the year
+    let totalSales = 0
+    for (const order of yearlyOrders) {
+      totalSales += order.total
+    }
+
+    res.json({ totalSales })
+  } catch (error) {
+    res.status(500).json({ message: error.message })
+  }
+})
+
+module.exports = router

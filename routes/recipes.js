@@ -16,12 +16,12 @@ router.get('/all', async (req, res) => {
 })
 
 router.post('/add', async (req, res) => {
-  console.log(req.body) // Debug
+  console.log(req.body)
 
   const recipe = new Recipe({
     name: req.body.name,
     ingredients: req.body.ingredients,
-    cost: req.body.cost, // เพิ่มฟิลด์ cost
+    cost: req.body.cost,
   })
 
   try {
@@ -59,12 +59,12 @@ router.delete('/delete/:id', async (req, res) => {
 
 router.put('/update/:id', async (req, res) => {
   const { id } = req.params
-  const { name, ingredients, cost } = req.body // เพิ่มการรับค่า cost จากบอดี้
+  const { name, ingredients, cost } = req.body
 
   try {
     const updatedRecipe = await Recipe.findByIdAndUpdate(
       id,
-      { name, ingredients, cost }, // เพิ่มการอัปเดต cost ด้วย
+      { name, ingredients, cost },
       { new: true }
     ).populate('ingredients.inventoryItemId')
 

@@ -98,8 +98,8 @@ router.get('/dashboard/saleOrders', async (req, res) => {
     const saleOrders = await SaleOrder.find({
       status: { $nin: ['Pending', 'Cancelled'] },
     })
-    const numberOfOrders = saleOrders.length // นับจำนวนออเดอร์ทั้งหมดที่มีสถานะไม่ใช่ "Pending" หรือ "Cancelled"
-    res.json({ numberOfOrders, saleOrders }) // ส่งกลับจำนวนออเดอร์และข้อมูลออเดอร์ที่ตรงเงื่อนไข
+    const numberOfOrders = saleOrders.length
+    res.json({ numberOfOrders, saleOrders })
   } catch (error) {
     res.status(500).json({ message: error.message })
   }
@@ -117,19 +117,24 @@ router.get('/all/saleOrders', async (req, res) => {
 
 router.get('/dashboard/dailySales', async (req, res) => {
   try {
-    // Get current date in the local time zone (assuming Bangkok time zone)
-    const today = moment().tz('Asia/Bangkok')
+    const asiaBangkokTimezone = 'Asia/Bangkok'
+    const today = new Date()
+    const asiaBangkokToday = new Date(
+      today.toLocaleString('en-US', { timeZone: asiaBangkokTimezone })
+    )
 
-    // Calculate start and end of the day in the local time zone
-    const startOfDay = today.clone().startOf('day')
-    const endOfDay = today.clone().endOf('day')
+    const startOfDay = new Date(asiaBangkokToday)
+    startOfDay.setHours(0, 0, 0, 0)
 
-    // Query for sales within the specified time range
+    const endOfDay = new Date(asiaBangkokToday)
+    endOfDay.setHours(23, 59, 59, 999)
+
+    // ค้นหายอดขายในช่วงเวลาที่กำหนด
     const dailySales = await SaleOrder.aggregate([
       {
         $match: {
           status: { $nin: ['Pending', 'Cancelled'] },
-          date: { $gte: startOfDay.toDate(), $lte: endOfDay.toDate() },
+          date: { $gte: startOfDay, $lte: endOfDay },
         },
       },
       {
@@ -140,15 +145,13 @@ router.get('/dashboard/dailySales', async (req, res) => {
       },
     ])
 
-    // Check if there are sales for the day
     if (dailySales.length === 0) {
       return res.status(404).json({ message: 'No sales found for today' })
     }
 
-    // Respond with the total sales for the day
     res.json({ totalSales: dailySales[0].totalSales })
   } catch (error) {
-    // Handle errors
+    // จัดการข้อผิดพลาด
     res.status(500).json({ message: error.message })
   }
 })
@@ -198,7 +201,6 @@ router.get('/saleOrders/currentdate', async (req, res) => {
     endOfToday.setHours(23, 59, 59, 999)
     const saleOrders = await SaleOrder.find({
       date: {
-        // Use the 'date' field
         $gte: startOfToday,
         $lte: endOfToday,
       },
@@ -355,45 +357,28 @@ router.get('/dashboard/weeklyTotal', async (req, res) => {
     const currentDate = new Date().toLocaleString('en-US', {
       timeZone: 'Asia/Bangkok',
     })
-
-    // Convert currentDate string to Date object
     const currentThaiDate = new Date(currentDate)
-
-    // Calculate start date of the week (Sunday)
     const startOfWeek = new Date(currentThaiDate)
     startOfWeek.setDate(currentThaiDate.getDate() - currentThaiDate.getDay())
-
-    // Calculate end date of the week (Saturday)
     const endOfWeek = new Date(currentThaiDate)
     endOfWeek.setDate(startOfWeek.getDate() + 6)
-
-    // Query for sale orders within the current week
     const weeklyOrders = await SaleOrder.find({
       status: { $nin: ['Pending', 'Cancelled'] },
       date: { $gte: startOfWeek, $lte: endOfWeek },
     })
-
-    // Initialize an object to store daily sales
     const dailySales = {}
-
-    // Loop through each day of the week and initialize daily sales to 0
     for (let i = 0; i < 7; i++) {
       const currentDate = new Date(startOfWeek)
       currentDate.setDate(startOfWeek.getDate() + i)
       dailySales[currentDate.toISOString().slice(0, 10)] = 0
     }
-
-    // Calculate total sales for each day of the week
     for (const order of weeklyOrders) {
       const orderDate = new Date(order.date)
       const orderDateISOString = orderDate.toISOString().slice(0, 10)
       dailySales[orderDateISOString] += order.total
     }
-
-    // Respond with the daily sales for the week
     res.json({ dailySales })
   } catch (error) {
-    // Handle errors
     res.status(500).json({ message: error.message })
   }
 })
@@ -451,10 +436,54 @@ router.get('/report/dailySales', async (req, res) => {
       totalSales += order.total
     }
     const formattedDate = currentThaiDate.toISOString().slice(0, 10)
-
-    // Return an array of objects with date and totalSales properties
     const dailySales = [{ date: formattedDate, totalSales }]
     res.json({ dailySales })
+  } catch (error) {
+    res.status(500).json({ message: error.message })
+  }
+})
+
+router.get('/report/weeklySales', async (req, res) => {
+  try {
+    const currentDate = new Date().toLocaleString('en-US', {
+      timeZone: 'Asia/Bangkok',
+    })
+    const currentThaiDate = new Date(currentDate)
+    const startOfWeek = new Date(currentThaiDate)
+    const currentDayOfWeek = startOfWeek.getDay()
+    startOfWeek.setDate(startOfWeek.getDate() - currentDayOfWeek)
+    startOfWeek.setHours(0, 0, 0, 0) 
+
+    const endOfWeek = new Date(startOfWeek)
+    endOfWeek.setDate(startOfWeek.getDate() + 6)
+    endOfWeek.setHours(23, 59, 59, 999)
+
+    const weeklyOrders = await SaleOrder.find({
+      status: { $nin: ['Pending', 'Cancelled'] },
+      date: { $gte: startOfWeek, $lte: endOfWeek },
+    })
+    const weeklySales = []
+    let totalSales = 0
+    for (let i = 0; i <= currentDayOfWeek; i++) {
+      const currentDate = new Date(startOfWeek)
+      currentDate.setDate(startOfWeek.getDate() + i)
+      currentDate.setHours(0, 0, 0, 0)
+
+      const endOfDay = new Date(currentDate)
+      endOfDay.setHours(23, 59, 59, 999)
+
+      let dailySales = 0
+      for (const order of weeklyOrders) {
+        if (order.date >= currentDate && order.date <= endOfDay) {
+          dailySales += order.total
+          totalSales += order.total
+        }
+      }
+      const formattedDate = currentDate.toISOString().slice(0, 10)
+      weeklySales.push({ date: formattedDate, dailySales })
+    }
+
+    res.json({ weeklySales, totalSales })
   } catch (error) {
     res.status(500).json({ message: error.message })
   }
@@ -465,11 +494,7 @@ router.get('report/monthlySales', async (req, res) => {
     const currentDate = new Date().toLocaleString('en-US', {
       timeZone: 'Asia/Bangkok',
     })
-
-    // Convert currentDate string to Date object
     const currentThaiDate = new Date(currentDate)
-
-    // Calculate start and end of the month
     const startOfMonth = new Date(currentThaiDate)
     startOfMonth.setDate(1)
     startOfMonth.setHours(0, 0, 0, 0)
@@ -484,7 +509,6 @@ router.get('report/monthlySales', async (req, res) => {
       date: { $gte: startOfMonth, $lte: endOfMonth },
     })
 
-    // Calculate total sales for the month
     let totalSales = 0
     for (const order of monthlyOrders) {
       totalSales += order.total
@@ -501,11 +525,7 @@ router.get('/yearlySales', async (req, res) => {
     const currentDate = new Date().toLocaleString('en-US', {
       timeZone: 'Asia/Bangkok',
     })
-
-    // Convert currentDate string to Date object
     const currentThaiDate = new Date(currentDate)
-
-    // Calculate start and end of the year
     const startOfYear = new Date(currentThaiDate)
     startOfYear.setMonth(0)
     startOfYear.setDate(1)
@@ -515,14 +535,11 @@ router.get('/yearlySales', async (req, res) => {
     endOfYear.setMonth(11)
     endOfYear.setDate(31)
     endOfYear.setHours(23, 59, 59, 999)
-
-    // Query for sale orders within the current year
     const yearlyOrders = await SaleOrder.find({
       status: { $nin: ['Pending', 'Cancelled'] },
       date: { $gte: startOfYear, $lte: endOfYear },
     })
 
-    // Calculate total sales for the year
     let totalSales = 0
     for (const order of yearlyOrders) {
       totalSales += order.total

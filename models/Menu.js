@@ -20,6 +20,7 @@ const MenuSchema = new mongoose.Schema({
     enum: ['ร้อน', 'เย็น', 'ปั่น', 'ทั่วไป'],
   },
   image: { type: String, required: true },
+  cost: { type: Number },
 })
 
 module.exports = mongoose.model('Menu', MenuSchema)

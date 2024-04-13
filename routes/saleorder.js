@@ -42,14 +42,13 @@ router.post('/:orderId/deductStock', async (req, res) => {
         const quantityUsed = ingredient.quantity * item.quantity
         const newQuantityInStock = inventoryItem.quantityInStock - quantityUsed
 
-        // Check if the new quantity is valid
         if (newQuantityInStock < 0) {
           return res.status(400).json({
             message: `Not enough stock for item ID: ${ingredient.inventoryItemId}.`,
           })
         }
         inventoryItem.quantityInStock = newQuantityInStock
-        inventoryItem.useInStock += quantityUsed // Update useInStock to reflect usage
+        inventoryItem.useInStock += quantityUsed
         await inventoryItem.save()
       }
     }
@@ -60,9 +59,10 @@ router.post('/:orderId/deductStock', async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' })
   }
 })
+
 router.post('/saleOrders', async (req, res) => {
   try {
-    const { user, items, total, status, paymentMethod, notes, change } =
+    const { user, items, total, status, paymentMethod, notes, change, profit } =
       req.body
 
     const newOrder = new SaleOrder({
@@ -73,6 +73,7 @@ router.post('/saleOrders', async (req, res) => {
       paymentMethod,
       notes,
       change,
+      profit,
     })
 
     const savedOrder = await newOrder.save()
@@ -452,7 +453,7 @@ router.get('/report/weeklySales', async (req, res) => {
     const startOfWeek = new Date(currentThaiDate)
     const currentDayOfWeek = startOfWeek.getDay()
     startOfWeek.setDate(startOfWeek.getDate() - currentDayOfWeek)
-    startOfWeek.setHours(0, 0, 0, 0) 
+    startOfWeek.setHours(0, 0, 0, 0)
 
     const endOfWeek = new Date(startOfWeek)
     endOfWeek.setDate(startOfWeek.getDate() + 6)
@@ -489,65 +490,237 @@ router.get('/report/weeklySales', async (req, res) => {
   }
 })
 
-router.get('report/monthlySales', async (req, res) => {
+router.get('/report/monthlySales', async (req, res) => {
   try {
     const currentDate = new Date().toLocaleString('en-US', {
       timeZone: 'Asia/Bangkok',
     })
     const currentThaiDate = new Date(currentDate)
-    const startOfMonth = new Date(currentThaiDate)
-    startOfMonth.setDate(1)
-    startOfMonth.setHours(0, 0, 0, 0)
-
-    const endOfMonth = new Date(currentThaiDate)
-    endOfMonth.setMonth(endOfMonth.getMonth() + 1)
-    endOfMonth.setDate(0)
-    endOfMonth.setHours(23, 59, 59, 999)
-
-    const monthlyOrders = await SaleOrder.find({
+    const orders = await SaleOrder.find({
       status: { $nin: ['Pending', 'Cancelled'] },
-      date: { $gte: startOfMonth, $lte: endOfMonth },
     })
 
+    const monthlySales = []
     let totalSales = 0
-    for (const order of monthlyOrders) {
-      totalSales += order.total
+
+    // ลูปผ่านทุกเดือนตั้งแต่เริ่มมีข้อมูลยอดขาย
+    const earliestOrder = orders.reduce(
+      (earliest, order) => (order.date < earliest ? order.date : earliest),
+      orders[0].date
+    )
+    const earliestMonth = new Date(
+      earliestOrder.getFullYear(),
+      earliestOrder.getMonth(),
+      1
+    )
+
+    // เพิ่มเดือนปัจจุบันเข้าไปในการวนลูปด้วย
+    const currentMonth = new Date(
+      currentThaiDate.getFullYear(),
+      currentThaiDate.getMonth(),
+      1
+    )
+    const latestMonth =
+      currentMonth > earliestMonth ? currentMonth : earliestMonth
+
+    while (earliestMonth <= latestMonth) {
+      const startOfMonth = new Date(earliestMonth)
+      startOfMonth.setHours(0, 0, 0, 0)
+
+      const endOfMonth = new Date(
+        earliestMonth.getFullYear(),
+        earliestMonth.getMonth() + 1,
+        0
+      )
+      endOfMonth.setHours(23, 59, 59, 999)
+
+      const monthlyOrders = orders.filter(
+        (order) => order.date >= startOfMonth && order.date <= endOfMonth
+      )
+
+      let monthlySale = []
+      let monthTotal = 0
+
+      for (const order of monthlyOrders) {
+        monthlySale.push({ date: order.date, dailySales: order.total })
+        monthTotal += order.total
+      }
+
+      monthlySales.push({
+        month: earliestMonth.toISOString().slice(0, 7),
+        monthlySale,
+        monthTotal,
+      })
+      totalSales += monthTotal
+
+      earliestMonth.setMonth(earliestMonth.getMonth() + 1)
     }
 
-    res.json({ totalSales })
+    res.json({ totalSales, monthlySales })
   } catch (error) {
     res.status(500).json({ message: error.message })
   }
 })
 
-router.get('/yearlySales', async (req, res) => {
+router.get('/report/yearlySales', async (req, res) => {
   try {
     const currentDate = new Date().toLocaleString('en-US', {
       timeZone: 'Asia/Bangkok',
     })
     const currentThaiDate = new Date(currentDate)
-    const startOfYear = new Date(currentThaiDate)
-    startOfYear.setMonth(0)
-    startOfYear.setDate(1)
-    startOfYear.setHours(0, 0, 0, 0)
+    const startOfYear = new Date(
+      currentThaiDate.getFullYear(),
+      0,
+      1,
+      0,
+      0,
+      0,
+      0
+    )
+    const endOfYear = new Date(
+      currentThaiDate.getFullYear(),
+      11,
+      31,
+      23,
+      59,
+      59,
+      999
+    )
 
-    const endOfYear = new Date(currentThaiDate)
-    endOfYear.setMonth(11)
-    endOfYear.setDate(31)
-    endOfYear.setHours(23, 59, 59, 999)
     const yearlyOrders = await SaleOrder.find({
       status: { $nin: ['Pending', 'Cancelled'] },
       date: { $gte: startOfYear, $lte: endOfYear },
     })
 
+    const monthlySales = []
     let totalSales = 0
-    for (const order of yearlyOrders) {
-      totalSales += order.total
+
+    for (let month = 0; month < 12; month++) {
+      const startOfMonth = new Date(
+        currentThaiDate.getFullYear(),
+        month,
+        1,
+        0,
+        0,
+        0,
+        0
+      )
+      const endOfMonth = new Date(
+        currentThaiDate.getFullYear(),
+        month + 1,
+        0,
+        23,
+        59,
+        59,
+        999
+      )
+
+      const monthlyOrders = yearlyOrders.filter(
+        (order) => order.date >= startOfMonth && order.date <= endOfMonth
+      )
+
+      let monthlySale = []
+      let monthTotal = 0
+
+      for (const order of monthlyOrders) {
+        monthlySale.push({ date: order.date, dailySales: order.total })
+        monthTotal += order.total
+      }
+
+      monthlySales.push({
+        month: startOfMonth.toISOString().slice(0, 7),
+        monthlySale,
+        monthTotal,
+      })
+      totalSales += monthTotal
     }
 
-    res.json({ totalSales })
+    res.json({ totalSales, monthlySales })
   } catch (error) {
     res.status(500).json({ message: error.message })
+  }
+})
+
+router.get('/report/payment-methods', async (req, res) => {
+  try {
+    const report = await SaleOrder.aggregate([
+      {
+        $match: {
+          $and: [
+            { status: { $ne: 'Cancelled' } }, // ไม่ใช่สถานะ Cancelled
+            { status: { $ne: 'Pending' } }, // ไม่ใช่สถานะ Pending
+          ],
+        },
+      },
+      {
+        $group: {
+          _id: '$paymentMethod',
+          totalAmount: { $sum: '$total' },
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $sort: { totalAmount: -1 },
+      },
+    ])
+    res.json(report)
+  } catch (error) {
+    console.error('Error fetching payment method report:', error)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+})
+
+router.get('/report/sales-analysis', async (req, res) => {
+  try {
+    const hourlyData = []
+    const startHour = 8 // เริ่มตั้งแต่ 08.00 น.
+    const endHour = 17 // สิ้นสุดที่ 17.00 น.
+
+    for (let hour = startHour; hour <= endHour; hour++) {
+      const startTime = new Date(new Date().setHours(hour, 0, 0, 0))
+      const endTime = new Date(new Date().setHours(hour + 1, 0, 0, 0))
+
+      const sales = await SaleOrder.find({
+        date: {
+          $gte: startTime,
+          $lt: endTime,
+        },
+        status: 'Completed',
+      })
+
+      const calculateTotalSales = (sales) =>
+        sales.reduce((acc, order) => acc + order.total, 0)
+      const totalSales = calculateTotalSales(sales)
+
+      const findTopSellingItems = (sales) => {
+        const itemMap = new Map()
+        sales.forEach((order) => {
+          order.items.forEach((item) => {
+            if (!itemMap.has(item.name)) {
+              itemMap.set(item.name, item.quantity)
+            } else {
+              itemMap.set(item.name, itemMap.get(item.name) + item.quantity)
+            }
+          })
+        })
+        return Array.from(itemMap.entries())
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 5)
+      }
+
+      const topItems = findTopSellingItems(sales)
+
+      hourlyData.push({
+        timeSlot: `${hour}:00 - ${hour + 1}:00`,
+        totalSales,
+        topItems,
+      })
+    }
+
+    res.json(hourlyData)
+  } catch (error) {
+    console.error('Error analyzing sales data:', error)
+    res.status(500).json({ error: 'Internal Server Error' })
   }
 })
 

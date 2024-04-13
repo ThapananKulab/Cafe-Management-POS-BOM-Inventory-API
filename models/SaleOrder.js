@@ -24,9 +24,13 @@ const SaleOrderSchema = new mongoose.Schema({
         type: Number,
         required: true,
       },
+      cost: {
+        type: Number,
+      },
     },
   ],
   total: { type: Number, required: true },
+  profit: { type: Number, required: true },
   status: {
     type: String,
     required: true,

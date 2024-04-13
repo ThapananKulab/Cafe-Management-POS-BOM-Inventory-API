@@ -10,7 +10,7 @@ const storage = multer.diskStorage({})
 const parser = multer({ storage: storage })
 
 router.post('/addMenu', parser.single('image'), async (req, res) => {
-  const { name, description, price, sweetLevel, type, recipe } = req.body
+  const { name, description, price, sweetLevel, type, recipe, cost } = req.body
 
   if (!req.file) {
     return res
@@ -33,6 +33,7 @@ router.post('/addMenu', parser.single('image'), async (req, res) => {
       type,
       recipe,
       image: result.secure_url,
+      cost,
     })
     const savedItem = await menuItem.save()
     res.status(201).json({

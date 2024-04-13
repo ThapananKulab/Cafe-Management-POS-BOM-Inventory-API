@@ -80,4 +80,21 @@ router.put('/update/:id', async (req, res) => {
   }
 })
 
+router.get('/reports/highest-cost-recipes', async (req, res) => {
+  try {
+    const recipes = await Recipe.find({})
+      .sort({ cost: -1 })
+      .populate('ingredients.inventoryItemId')
+
+    if (!recipes || recipes.length === 0) {
+      return res.status(404).json({ message: 'No recipes found' })
+    }
+
+    res.json(recipes)
+  } catch (error) {
+    console.error('Error fetching highest cost recipes:', error)
+    res.status(500).json({ message: 'Internal server error' })
+  }
+})
+
 module.exports = router

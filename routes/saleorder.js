@@ -130,7 +130,6 @@ router.get('/dashboard/dailySales', async (req, res) => {
     const endOfDay = new Date(asiaBangkokToday)
     endOfDay.setHours(23, 59, 59, 999)
 
-    // ค้นหายอดขายในช่วงเวลาที่กำหนด
     const dailySales = await SaleOrder.aggregate([
       {
         $match: {
@@ -724,4 +723,24 @@ router.get('/report/sales-analysis', async (req, res) => {
   }
 })
 
+router.get('/dashboard/total-profit', async (req, res) => {
+  try {
+    const result = await SaleOrder.aggregate([
+      {
+        $match: { status: 'Completed' },
+      },
+      {
+        $group: {
+          _id: null,
+          totalProfit: { $sum: '$profit' },
+        },
+      },
+    ])
+
+    res.json({ totalProfit: result[0]?.totalProfit || 0 })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: 'Server Error' })
+  }
+})
 module.exports = router

@@ -288,3 +288,6 @@ app.use('/api/post', post)
 
 const supplier = require('./routes/supplier')
 app.use('/api/supplier', supplier)
+
+const purchaseitem = require('./routes/purchaseitem')
+app.use('/api/purchaseitem', purchaseitem)

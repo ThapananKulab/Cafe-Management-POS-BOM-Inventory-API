@@ -11,6 +11,8 @@ const purchaseReceiptSchema = new mongoose.Schema({
       name: { type: Number },
       quantity: { type: Number },
       unitPrice: { type: Number },
+      realquantity: { type: Number },
+      quantityInStock: { type: Number },
     },
   ],
   total: {
@@ -20,6 +22,11 @@ const purchaseReceiptSchema = new mongoose.Schema({
   receivedAt: {
     type: Date,
     default: Date.now,
+  },
+  supplier: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Supplier',
+    required: true,
   },
 })
 

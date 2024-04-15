@@ -5,9 +5,9 @@ const InventoryItem = require('../models/InventoryItem.js')
 
 router.post('/add', async (req, res) => {
   try {
-    const { items } = req.body
+    const { items, supplier } = req.body
 
-    // คำนวณ total โดยคูณจำนวนและราคาต่อหน่วยของแต่ละรายการ
+    // คำนวณยอดรวม
     const total = items.reduce(
       (acc, item) => acc + item.quantity * item.unitPrice,
       0
@@ -17,10 +17,18 @@ router.post('/add', async (req, res) => {
     const purchaseReceipt = new PurchaseReceipt({
       items,
       total,
+      supplier,
     })
-
-    // บันทึกลงในฐานข้อมูล
     await purchaseReceipt.save()
+
+    // ลดจำนวนสินค้าในคลัง
+    items.forEach(async (item) => {
+      const inventoryItem = await InventoryItem.findById(item._id)
+      if (inventoryItem) {
+        inventoryItem.quantityInStock += item.quantity
+        await inventoryItem.save()
+      }
+    })
 
     res.status(201).json(purchaseReceipt)
   } catch (error) {

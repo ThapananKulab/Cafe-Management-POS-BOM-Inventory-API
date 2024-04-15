@@ -10,7 +10,7 @@ const purchaseReceiptSchema = new mongoose.Schema({
       },
       name: { type: Number },
       quantity: { type: Number },
-      unitPrice: { type: Number }, // เพิ่ม unitPrice
+      unitPrice: { type: Number },
     },
   ],
   total: {

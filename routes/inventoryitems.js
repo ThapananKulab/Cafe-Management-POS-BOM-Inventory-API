@@ -28,6 +28,7 @@ router.get('/nearEmpty', async (req, res) => {
       quantityInStock: { $lte: 10 },
     })
     res.json(nearEmptyItems)
+    console.log(nearEmptyItems)
   } catch (error) {
     res.status(500).json({ message: error.message })
   }

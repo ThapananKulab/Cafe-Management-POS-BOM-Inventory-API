@@ -119,22 +119,20 @@ router.get('/all/saleOrders', async (req, res) => {
 router.get('/dashboard/dailySales', async (req, res) => {
   try {
     const asiaBangkokTimezone = 'Asia/Bangkok'
-    const today = new Date()
-    const asiaBangkokToday = new Date(
-      today.toLocaleString('en-US', { timeZone: asiaBangkokTimezone })
-    )
+    const asiaBangkokToday = moment.tz(asiaBangkokTimezone).format('YYYY-MM-DD')
 
-    const startOfDay = new Date(asiaBangkokToday)
-    startOfDay.setHours(0, 0, 0, 0)
-
-    const endOfDay = new Date(asiaBangkokToday)
-    endOfDay.setHours(23, 59, 59, 999)
+    const startOfDay = moment
+      .tz(asiaBangkokToday, asiaBangkokTimezone)
+      .startOf('day')
+    const endOfDay = moment
+      .tz(asiaBangkokToday, asiaBangkokTimezone)
+      .endOf('day')
 
     const dailySales = await SaleOrder.aggregate([
       {
         $match: {
           status: { $nin: ['Pending', 'Cancelled'] },
-          date: { $gte: startOfDay, $lte: endOfDay },
+          date: { $gte: startOfDay.toDate(), $lte: endOfDay.toDate() },
         },
       },
       {
@@ -151,7 +149,6 @@ router.get('/dashboard/dailySales', async (req, res) => {
 
     res.json({ totalSales: dailySales[0].totalSales })
   } catch (error) {
-    // จัดการข้อผิดพลาด
     res.status(500).json({ message: error.message })
   }
 })

@@ -23,7 +23,7 @@ const MenuSchema = new mongoose.Schema({
   cost: { type: Number },
   glassSize: {
     type: String,
-    enum: ['เล็ก', 'กลาง', 'ใหญ่'],
+    enum: ['ไม่มี', 'เล็ก', 'กลาง', 'ใหญ่'],
   },
 })
 

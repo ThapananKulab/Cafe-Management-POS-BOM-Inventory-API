@@ -21,6 +21,10 @@ const MenuSchema = new mongoose.Schema({
   },
   image: { type: String, required: true },
   cost: { type: Number },
+  glassSize: {
+    type: String,
+    enum: ['เล็ก', 'กลาง', 'ใหญ่'],
+  },
 })
 
 module.exports = mongoose.model('Menu', MenuSchema)

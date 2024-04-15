@@ -10,7 +10,16 @@ const storage = multer.diskStorage({})
 const parser = multer({ storage: storage })
 
 router.post('/addMenu', parser.single('image'), async (req, res) => {
-  const { name, description, price, sweetLevel, type, recipe, cost } = req.body
+  const {
+    name,
+    description,
+    price,
+    sweetLevel,
+    type,
+    recipe,
+    cost,
+    glassSize,
+  } = req.body
 
   if (!req.file) {
     return res
@@ -34,7 +43,9 @@ router.post('/addMenu', parser.single('image'), async (req, res) => {
       recipe,
       image: result.secure_url,
       cost,
+      glassSize, // เพิ่ม glassSize ลงในข้อมูลของเมนู
     })
+
     const savedItem = await menuItem.save()
     res.status(201).json({
       success: true,
@@ -109,16 +120,25 @@ router.get('/checkName', async (req, res) => {
 
 router.put('/:id', parser.single('image'), async (req, res) => {
   const { id } = req.params
-  const { name, description, price, sweetLevel, type, recipe } = req.body
+  const {
+    name,
+    description,
+    price,
+    sweetLevel,
+    type,
+    recipe,
+    glassSize, // เพิ่ม glassSize ลงในข้อมูลของเมนู
+  } = req.body
 
   try {
     let updatedData = {
       name,
       description,
       price,
-      sweetLevel, // Ensure this is included
-      type, // Ensure this is included
+      sweetLevel,
+      type,
       recipe,
+      glassSize,
     }
     if (req.file) {
       const imageUrl = req.file.path

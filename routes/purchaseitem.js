@@ -44,45 +44,34 @@ router.put("/:purchaseReceiptId/items/:itemId", async (req, res) => {
 router.post("/add-to-q", async (req, res) => {
   try {
     const { purchaseReceiptId, selectedItemIds, status, received } = req.body;
-
-    // ค้นหาซองซื้อด้วย ID ที่รับมา
     const purchaseReceipt = await PurchaseReceipt.findById(purchaseReceiptId);
     if (!purchaseReceipt) {
       return res.status(404).json({ message: "Purchase receipt not found" });
     }
 
-    // ตรวจสอบว่ารายการที่เลือกมีอยู่ในซองซื้อหรือไม่
     const selectedItems = purchaseReceipt.items.filter((item) =>
       selectedItemIds.includes(item.item.toString())
     );
-
-    // ตั้งค่าสถานะของรายการที่ถูกเลือกเป็น 'withdrawn'
     selectedItems.forEach((item) => {
       item.status = "withdrawn";
     });
-
-    // บันทึกการเปลี่ยนแปลงในซองซื้อ
     await purchaseReceipt.save();
 
-    // อัปเดตสถานะของรายการสินค้าในคลังสินค้าเป็น 'withdrawn'
     for (const itemId of selectedItemIds) {
-      const updatedItem = await InventoryItem.findByIdAndUpdate(
-        itemId,
-        { status: "withdrawn", received },
-        { new: true }
-      );
-
-      // อัปเดตจำนวนสินค้าในคลังสินค้า
       const { quantity, realquantity } = selectedItems.find(
         (item) => item.item.toString() === itemId
       );
-      await InventoryItem.findByIdAndUpdate(
+      const updatedItem = await InventoryItem.findByIdAndUpdate(
         itemId,
-        { $inc: { quantityInStock: quantity * realquantity } },
-        { upsert: true, new: true }
+        {
+          status: "withdrawn",
+          received,
+          $inc: { quantityInStock: quantity * realquantity },
+        },
+        { new: true, upsert: true }
       );
       console.log(
-        `Updated status and quantityInStock for item ${itemId} to withdrawn`
+        `Updated status, received, and quantityInStock for item ${itemId} to withdrawn`
       );
     }
 

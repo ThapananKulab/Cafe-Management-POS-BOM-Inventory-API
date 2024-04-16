@@ -66,7 +66,7 @@ router.post("/add-to-q", async (req, res) => {
         itemId,
         {
           status: "withdrawn",
-          received,
+          received, // Use received from frontend
           $inc: { quantityInStock: quantity * realquantity },
         },
         { new: true, upsert: true }

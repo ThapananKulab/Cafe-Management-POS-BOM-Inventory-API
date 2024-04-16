@@ -19,7 +19,7 @@ const inventoryItemSchema = new mongoose.Schema({
     type: String,
     enum: ["กรัม", "มิลลิลิตร", "ชิ้น", "ซอง", "ทั่วไป"],
   },
-  received: { type: Date, default: Date.now },
+  // received: { type: Date, default: Date.now },
   quantityCount: { type: Number },
   quantityInStock: { type: Number, required: true },
   useInStock: { type: Number },

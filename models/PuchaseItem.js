@@ -13,6 +13,7 @@ const purchaseReceiptSchema = new mongoose.Schema({
       unitPrice: { type: Number },
       realquantity: { type: Number },
       quantityInStock: { type: Number },
+      quantityCount: { type: Number },
     },
   ],
   total: {
@@ -27,6 +28,11 @@ const purchaseReceiptSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Supplier',
     required: true,
+  },
+  status: {
+    type: String,
+    enum: ['pending', 'completed', 'cancelled'],
+    default: 'pending',
   },
 })
 

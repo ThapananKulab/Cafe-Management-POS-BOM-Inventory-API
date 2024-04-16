@@ -1,11 +1,11 @@
-const mongoose = require('mongoose')
+const mongoose = require("mongoose");
 
 const purchaseReceiptSchema = new mongoose.Schema({
   items: [
     {
       item: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'InventoryItem',
+        ref: "InventoryItem",
         required: true,
       },
       name: { type: Number },
@@ -14,26 +14,26 @@ const purchaseReceiptSchema = new mongoose.Schema({
       realquantity: { type: Number },
       quantityInStock: { type: Number },
       quantityCount: { type: Number },
+      status: {
+        type: String,
+        enum: ["pending", "withdrawn"],
+        default: "pending",
+      },
+      received: { type: Date, default: Date.now },
     },
   ],
-  total: {
-    type: Number,
-    required: true,
-  },
-  receivedAt: {
-    type: Date,
-    default: Date.now,
-  },
+  total: { type: Number, required: true },
+  received: { type: Date, default: Date.now },
   supplier: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Supplier',
+    ref: "Supplier",
     required: true,
   },
   status: {
     type: String,
-    enum: ['pending', 'completed', 'cancelled'],
-    default: 'pending',
+    enum: ["pending", "completed", "cancelled"],
+    default: "pending",
   },
-})
+});
 
-module.exports = mongoose.model('PurchaseReceipt', purchaseReceiptSchema)
+module.exports = mongoose.model("PurchaseReceipt", purchaseReceiptSchema);

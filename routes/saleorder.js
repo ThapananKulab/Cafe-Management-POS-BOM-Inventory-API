@@ -312,7 +312,6 @@ router.post("/:orderId/accept", async (req, res) => {
     // ตรวจสอบว่าสถานะคำสั่งซื้อเป็น "Pending" หรือไม่
     const order = await SaleOrder.findById(orderId);
     if (order.status !== "Pending") {
-      // ถ้าไม่ใช่ "Pending" ให้ส่งข้อความผิดพลาดกลับไป
       return res.status(400).json({
         error: "คำสั่งซื้อนี้ไม่ได้อยู่ในสถานะรอดำเนินการ",
       });

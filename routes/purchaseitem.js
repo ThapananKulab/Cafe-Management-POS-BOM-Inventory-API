@@ -55,7 +55,9 @@ router.post("/add-to-q", async (req, res) => {
     );
     selectedItems.forEach((item) => {
       item.status = "withdrawn";
+      item.received = new Date();
     });
+
     await purchaseReceipt.save();
 
     for (const itemId of selectedItemIds) {
@@ -66,13 +68,13 @@ router.post("/add-to-q", async (req, res) => {
         itemId,
         {
           status: "withdrawn",
-          received, // Use received from frontend
+          received: received,
           $inc: { quantityInStock: quantity * realquantity },
         },
         { new: true, upsert: true }
       );
       console.log(
-        `Updated status, received, and quantityInStock for item ${itemId} to withdrawn`
+        `Updated status, received, and quantityInStock for item ${itemId} to withdrawn ${received}`
       );
     }
 

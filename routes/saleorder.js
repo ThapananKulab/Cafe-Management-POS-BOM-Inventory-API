@@ -309,23 +309,29 @@ router.post("/:orderId/accept", async (req, res) => {
   const { orderId } = req.params;
 
   try {
-    // ตรวจสอบว่าสถานะคำสั่งซื้อเป็น "Pending" หรือไม่
-    const order = await SaleOrder.findById(orderId);
-    if (order.status !== "Pending") {
-      // ถ้าไม่ใช่ "Pending" ให้ส่งข้อความผิดพลาดกลับไป
+    // Log the order ID for debugging
+    console.log("Order ID:", orderId);
+
+    const isStockSufficient = await checkStockSufficiency(orderId);
+
+    if (!isStockSufficient) {
+      const updatedOrder = await SaleOrder.findByIdAndUpdate(
+        orderId,
+        { status: "Pending" },
+        { new: true }
+      );
+
       return res.status(400).json({
-        error: "คำสั่งซื้อนี้ไม่ได้อยู่ในสถานะรอดำเนินการ",
+        error: "วัตถุดิบใน Stock ไม่เพียงพอ",
       });
     }
-
-    // อัพเดทสถานะของคำสั่งซื้อเป็น "Completed"
     const updatedOrder = await SaleOrder.findByIdAndUpdate(
       orderId,
       { status: "Completed" },
       { new: true }
     );
 
-    // ส่งข้อมูลของคำสั่งซื้อที่ถูกอัพเดทกลับไป
+    // Return the updated order
     res.json(updatedOrder);
   } catch (error) {
     console.error("Error accepting order:", error);

@@ -4,62 +4,6 @@ const moment = require("moment-timezone");
 const SaleOrder = require("../models/SaleOrder.js");
 const InventoryItem = require("../models/InventoryItem");
 
-router.post("/:orderId/deductStock", async (req, res) => {
-  const { orderId } = req.params;
-
-  try {
-    const saleOrder = await SaleOrder.findById(orderId).populate({
-      path: "items.menuItem",
-      populate: {
-        path: "recipe",
-        model: "Recipe",
-      },
-    });
-
-    if (!saleOrder) {
-      return res.status(404).json({ message: "Sale order not found." });
-    }
-
-    for (const item of saleOrder.items) {
-      const menuItem = item.menuItem;
-
-      if (!menuItem.recipe || !menuItem.recipe.ingredients) {
-        continue;
-      }
-
-      for (const ingredient of menuItem.recipe.ingredients) {
-        const inventoryItem = await InventoryItem.findById(
-          ingredient.inventoryItemId
-        );
-
-        if (!inventoryItem) {
-          console.warn(
-            `Inventory item not found for ID: ${ingredient.inventoryItemId}`
-          );
-          continue;
-        }
-
-        const quantityUsed = ingredient.quantity * item.quantity;
-        const newQuantityInStock = inventoryItem.quantityInStock - quantityUsed;
-
-        if (newQuantityInStock < 0) {
-          return res.status(400).json({
-            message: `Not enough stock for item ID: ${ingredient.inventoryItemId}.`,
-          });
-        }
-        inventoryItem.quantityInStock = newQuantityInStock;
-        inventoryItem.useInStock += quantityUsed;
-        await inventoryItem.save();
-      }
-    }
-
-    res.status(200).json({ message: "Stock deducted successfully." });
-  } catch (error) {
-    console.error("Error deducting stock:", error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-});
-
 router.post("/saleOrders", async (req, res) => {
   try {
     const { user, items, total, status, paymentMethod, notes, change, profit } =
@@ -305,54 +249,86 @@ const checkStockSufficiency = async (orderId) => {
   }
 };
 
+router.post("/:orderId/deductStock", async (req, res) => {
+  const { orderId } = req.params;
+
+  try {
+    const saleOrder = await SaleOrder.findById(orderId).populate({
+      path: "items.menuItem",
+      populate: {
+        path: "recipe",
+        model: "Recipe",
+      },
+    });
+
+    if (!saleOrder) {
+      return res.status(404).json({ message: "Sale order not found." });
+    }
+
+    for (const item of saleOrder.items) {
+      const menuItem = item.menuItem;
+
+      if (!menuItem.recipe || !menuItem.recipe.ingredients) {
+        continue;
+      }
+
+      for (const ingredient of menuItem.recipe.ingredients) {
+        const inventoryItem = await InventoryItem.findById(
+          ingredient.inventoryItemId
+        );
+
+        if (!inventoryItem) {
+          console.warn(
+            `Inventory item not found for ID: ${ingredient.inventoryItemId}`
+          );
+          continue;
+        }
+
+        const quantityUsed = ingredient.quantity * item.quantity;
+        const newQuantityInStock = inventoryItem.quantityInStock - quantityUsed;
+
+        if (newQuantityInStock < 0) {
+          return res.status(400).json({
+            message: `Not enough stock for item ID: ${ingredient.inventoryItemId}.`,
+          });
+        }
+        inventoryItem.quantityInStock = newQuantityInStock;
+        inventoryItem.useInStock += quantityUsed;
+        await inventoryItem.save();
+      }
+    }
+
+    res.status(200).json({ message: "Stock deducted successfully." });
+  } catch (error) {
+    console.error("Error deducting stock:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 router.post("/:orderId/accept", async (req, res) => {
   const { orderId } = req.params;
 
   try {
-    // Log the order ID for debugging
-    console.log("Order ID:", orderId);
-
-    const isStockSufficient = await checkStockSufficiency(orderId);
-
-    if (!isStockSufficient) {
-      const updatedOrder = await SaleOrder.findByIdAndUpdate(
-        orderId,
-        { status: "Pending" },
-        { new: true }
-      );
-
+    // ตรวจสอบว่าสถานะคำสั่งซื้อเป็น "Pending" หรือไม่
+    const order = await SaleOrder.findById(orderId);
+    if (order.status !== "Pending") {
+      // ถ้าไม่ใช่ "Pending" ให้ส่งข้อความผิดพลาดกลับไป
       return res.status(400).json({
-        error: "วัตถุดิบใน Stock ไม่เพียงพอ",
+        error: "คำสั่งซื้อนี้ไม่ได้อยู่ในสถานะรอดำเนินการ",
       });
     }
+
+    // อัพเดทสถานะของคำสั่งซื้อเป็น "Completed"
     const updatedOrder = await SaleOrder.findByIdAndUpdate(
       orderId,
       { status: "Completed" },
       { new: true }
     );
 
-    // Return the updated order
+    // ส่งข้อมูลของคำสั่งซื้อที่ถูกอัพเดทกลับไป
     res.json(updatedOrder);
   } catch (error) {
     console.error("Error accepting order:", error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-});
-
-router.post("/:orderId/cancel", async (req, res) => {
-  const { orderId } = req.params;
-
-  try {
-    // Update order status to 'Cancelled'
-    const updatedOrder = await SaleOrder.findByIdAndUpdate(
-      orderId,
-      { status: "Cancelled" },
-      { new: true }
-    );
-
-    res.json(updatedOrder);
-  } catch (error) {
-    console.error("Error cancelling order:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });

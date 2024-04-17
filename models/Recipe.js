@@ -1,4 +1,4 @@
-const mongoose = require('mongoose')
+const mongoose = require("mongoose");
 
 const recipeSchema = new mongoose.Schema({
   name: { type: String, required: true },
@@ -6,7 +6,7 @@ const recipeSchema = new mongoose.Schema({
     {
       inventoryItemId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'InventoryItem',
+        ref: "InventoryItem",
         required: true,
       },
       name: { type: String },
@@ -16,23 +16,23 @@ const recipeSchema = new mongoose.Schema({
       type: {
         type: String,
         enum: [
-          'ถุง',
-          'กระปุก',
-          'ทั่วไป',
-          'กระป๋อง',
-          'แก้ว',
-          'ทั่วไป',
-          'ขวด',
-          'ถัง',
+          "ถุง",
+          "กระปุก",
+          "ทั่วไป",
+          "กระป๋อง",
+          "แก้ว",
+          "ทั่วไป",
+          "ขวด",
+          "ถัง",
         ],
       },
       unit: {
         type: String,
-        enum: ['กรัม', 'มิลลิลิตร', 'ชิ้น', 'ซอง', 'ทั่วไป'],
+        enum: ["กรัม", "มิลลิลิตร", "ชิ้น", "ซอง", "ทั่วไป"],
       },
     },
   ],
   cost: { type: Number },
-})
+});
 
-module.exports = mongoose.model('Recipe', recipeSchema)
+module.exports = mongoose.model("Recipe", recipeSchema);

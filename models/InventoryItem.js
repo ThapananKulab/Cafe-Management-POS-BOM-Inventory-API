@@ -26,8 +26,8 @@ const inventoryItemSchema = new mongoose.Schema({
   unitPrice: { type: Number, required: true },
   status: {
     type: String,
-    enum: ["available", "unavailable", "pending"],
-    default: "available",
+    enum: ["pending", "withdrawn"],
+    default: "pending",
   },
 });
 

@@ -22,7 +22,7 @@ const inventoryItemSchema = new mongoose.Schema({
   // received: { type: Date, default: Date.now },
   realquantity: { type: Number, required: true },
   quantityInStock: { type: Number, required: true },
-  useInStock: { type: Number },
+  useInStock: { type: Number, required: true, default: 0 },
   unitPrice: { type: Number, required: true },
   status: {
     type: String,

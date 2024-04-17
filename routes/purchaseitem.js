@@ -44,7 +44,13 @@ router.put("/:purchaseReceiptId/items/:itemId", async (req, res) => {
 //
 router.post("/add-to-q", async (req, res) => {
   try {
-    const { purchaseReceiptId, selectedItemIds, status, received } = req.body;
+    const {
+      purchaseReceiptId,
+      selectedItemIds,
+      status,
+      received,
+      withdrawner,
+    } = req.body;
     const purchaseReceipt = await PurchaseReceipt.findById(purchaseReceiptId);
     if (!purchaseReceipt) {
       return res.status(404).json({ message: "Purchase receipt not found" });
@@ -56,6 +62,7 @@ router.post("/add-to-q", async (req, res) => {
     selectedItems.forEach((item) => {
       item.status = "withdrawn";
       item.received = new Date();
+      item.withdrawner = withdrawner;
     });
 
     await purchaseReceipt.save();

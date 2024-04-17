@@ -109,7 +109,6 @@ app.post("/api/authen", jsonParser, (req, res) => {
       res.status(401).json({ status: "error", message: "กรุณาเข้าสู่ระบบ" });
       return;
     }
-
     const tokenValue = token.split(" ")[1];
     const decoded = jwt.verify(tokenValue, secret);
     res.json({ status: "ok", decoded });

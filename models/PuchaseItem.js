@@ -20,6 +20,7 @@ const purchaseReceiptSchema = new mongoose.Schema({
         default: "pending",
       },
       received: { type: Date, default: Date.now, required: true },
+      withdrawner: { type: String },
     },
   ],
   total: { type: Number, required: true },

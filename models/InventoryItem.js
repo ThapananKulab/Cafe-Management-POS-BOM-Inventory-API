@@ -20,7 +20,7 @@ const inventoryItemSchema = new mongoose.Schema({
     enum: ["กรัม", "มิลลิลิตร", "ชิ้น", "ซอง", "ทั่วไป"],
   },
   // received: { type: Date, default: Date.now },
-  realquantity: { type: Number },
+  realquantity: { type: Number, required: true },
   quantityInStock: { type: Number, required: true },
   useInStock: { type: Number },
   unitPrice: { type: Number, required: true },
@@ -30,5 +30,10 @@ const inventoryItemSchema = new mongoose.Schema({
     default: "available",
   },
 });
+
+inventoryItemSchema.methods.adjustStock = async function (amount) {
+  this.quantityInStock += amount;
+  await this.save();
+};
 
 module.exports = mongoose.model("InventoryItem", inventoryItemSchema);

@@ -637,8 +637,8 @@ router.get("/report/payment-methods", async (req, res) => {
       {
         $match: {
           $and: [
-            { status: { $ne: "Cancelled" } }, // ไม่ใช่สถานะ Cancelled
-            { status: { $ne: "Pending" } }, // ไม่ใช่สถานะ Pending
+            { status: { $ne: "Cancelled" } },
+            { status: { $ne: "Pending" } },
           ],
         },
       },
@@ -743,6 +743,60 @@ router.get("/dashboard/total-profit", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server Error" });
+  }
+});
+
+router.get("/dashboard/salesByTime", async (req, res) => {
+  try {
+    const startTime = new Date();
+    startTime.setUTCHours(1, 0, 0, 0);
+    const endTime = new Date();
+    endTime.setUTCHours(11, 0, 0, 0);
+
+    const salesByTime = await SaleOrder.aggregate([
+      {
+        $match: {
+          date: {
+            $gte: startTime,
+            $lt: endTime,
+          },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            $hour: { $add: ["$date", 7 * 60 * 60 * 1000] },
+          },
+          totalSales: { $sum: "$total" },
+        },
+      },
+      {
+        $sort: { _id: 1 },
+      },
+    ]);
+
+    res.json(salesByTime);
+  } catch (error) {
+    console.error("Error fetching sales by time:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+router.get("/dashboard/salesByMonth", async (req, res) => {
+  try {
+    const monthlySales = await SaleOrder.aggregate([
+      {
+        $group: {
+          _id: { $month: "$date" }, // Group by month
+          totalSales: { $sum: "$total" }, // Sum of total sales for each month
+        },
+      },
+      { $sort: { _id: 1 } }, // Sort by month
+    ]);
+    res.json(monthlySales);
+  } catch (error) {
+    console.error("Error fetching monthly sales:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 

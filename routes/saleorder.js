@@ -332,6 +332,29 @@ router.post("/:orderId/accept", async (req, res) => {
   }
 });
 
+router.post("/:orderId/cancel", async (req, res) => {
+  const { orderId } = req.params;
+  
+    try {
+      const order = await SaleOrder.findById(orderId);
+      if (order.status !== "Pending") {
+        return res.status(400).json({
+          error: "คำสั่งซื้อนี้ไม่ได้อยู่ในสถานะรอดำเนินการ",
+        });
+      }
+  
+      const updatedOrder = await SaleOrder.findByIdAndUpdate(
+        orderId,
+        { status: "Cancelled" },
+   { new: true }
+      );
+    res.json(updatedOrder);
+    } catch (error) {
+      console.error("Error cancelling order:", error);
+  res.status(500).json({ error: "Internal Server Error" });
+    }
+  });
+
 router.get("/dashboard/weeklyTotal", async (req, res) => {
   try {
     const currentDate = new Date().toLocaleString("en-US", {

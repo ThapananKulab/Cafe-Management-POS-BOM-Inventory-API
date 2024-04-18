@@ -309,22 +309,17 @@ router.post("/:orderId/accept", async (req, res) => {
   const { orderId } = req.params;
 
   try {
-    // ตรวจสอบว่าสถานะคำสั่งซื้อเป็น "Pending" หรือไม่
     const order = await SaleOrder.findById(orderId);
     if (order.status !== "Pending") {
       return res.status(400).json({
         error: "คำสั่งซื้อนี้ไม่ได้อยู่ในสถานะรอดำเนินการ",
       });
     }
-
-    // อัพเดทสถานะของคำสั่งซื้อเป็น "Completed"
     const updatedOrder = await SaleOrder.findByIdAndUpdate(
       orderId,
       { status: "Completed" },
       { new: true }
     );
-
-    // ส่งข้อมูลของคำสั่งซื้อที่ถูกอัพเดทกลับไป
     res.json(updatedOrder);
   } catch (error) {
     console.error("Error accepting order:", error);
@@ -410,7 +405,6 @@ router.get("/dashboard/previousWeeklyTotal", async (req, res) => {
 
     res.json({ totalSales: previousWeeklyTotalSales });
   } catch (error) {
-    // Handle errors
     res.status(500).json({ message: error.message });
   }
 });
@@ -502,8 +496,6 @@ router.get("/report/monthlySales", async (req, res) => {
 
     const monthlySales = [];
     let totalSales = 0;
-
-    // ลูปผ่านทุกเดือนตั้งแต่เริ่มมีข้อมูลยอดขาย
     const earliestOrder = orders.reduce(
       (earliest, order) => (order.date < earliest ? order.date : earliest),
       orders[0].date
@@ -513,8 +505,6 @@ router.get("/report/monthlySales", async (req, res) => {
       earliestOrder.getMonth(),
       1
     );
-
-    // เพิ่มเดือนปัจจุบันเข้าไปในการวนลูปด้วย
     const currentMonth = new Date(
       currentThaiDate.getFullYear(),
       currentThaiDate.getMonth(),
@@ -673,8 +663,8 @@ router.get("/report/payment-methods", async (req, res) => {
 router.get("/report/sales-analysis", async (req, res) => {
   try {
     const hourlyData = [];
-    const startHour = 8; // เริ่มตั้งแต่ 08.00 น.
-    const endHour = 17; // สิ้นสุดที่ 17.00 น.
+    const startHour = 8;
+    const endHour = 17;
 
     for (let hour = startHour; hour <= endHour; hour++) {
       const startTime = new Date(new Date().setHours(hour, 0, 0, 0));
@@ -726,9 +716,21 @@ router.get("/report/sales-analysis", async (req, res) => {
 
 router.get("/dashboard/total-profit", async (req, res) => {
   try {
+    const todayStart = new Date().toLocaleString("en-US", {
+      timeZone: "Asia/Bangkok",
+    });
+    const todayStartUTC = new Date(todayStart).setHours(0, 0, 0, 0);
+    const todayEnd = new Date().toLocaleString("en-US", {
+      timeZone: "Asia/Bangkok",
+    });
+    const todayEndUTC = new Date(todayEnd).setHours(23, 59, 59, 999);
+
     const result = await SaleOrder.aggregate([
       {
-        $match: { status: "Completed" },
+        $match: {
+          status: "Completed",
+          date: { $gte: new Date(todayStartUTC), $lte: new Date(todayEndUTC) },
+        },
       },
       {
         $group: {
@@ -737,11 +739,11 @@ router.get("/dashboard/total-profit", async (req, res) => {
         },
       },
     ]);
-
     res.json({ totalProfit: result[0]?.totalProfit || 0 });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server Error" });
   }
 });
+
 module.exports = router;

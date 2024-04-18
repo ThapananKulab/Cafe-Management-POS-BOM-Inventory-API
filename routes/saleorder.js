@@ -716,20 +716,16 @@ router.get("/report/sales-analysis", async (req, res) => {
 
 router.get("/dashboard/total-profit", async (req, res) => {
   try {
-    const todayStart = new Date().toLocaleString("en-US", {
-      timeZone: "Asia/Bangkok",
-    });
-    const todayStartUTC = new Date(todayStart).setHours(0, 0, 0, 0);
-    const todayEnd = new Date().toLocaleString("en-US", {
-      timeZone: "Asia/Bangkok",
-    });
-    const todayEndUTC = new Date(todayEnd).setHours(23, 59, 59, 999);
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
 
     const result = await SaleOrder.aggregate([
       {
         $match: {
           status: "Completed",
-          date: { $gte: new Date(todayStartUTC), $lte: new Date(todayEndUTC) },
+          date: { $gte: todayStart, $lte: todayEnd },
         },
       },
       {
@@ -739,7 +735,9 @@ router.get("/dashboard/total-profit", async (req, res) => {
         },
       },
     ]);
-    res.json({ totalProfit: result[0]?.totalProfit || 0 });
+
+    // If there are no sales for today, return totalProfit as 0
+    res.json({ totalProfit: result.length > 0 ? result[0].totalProfit : 0 });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server Error" });

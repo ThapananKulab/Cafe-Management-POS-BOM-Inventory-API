@@ -749,9 +749,9 @@ router.get("/dashboard/total-profit", async (req, res) => {
 router.get("/dashboard/salesByTime", async (req, res) => {
   try {
     const startTime = new Date();
-    startTime.setUTCHours(1, 0, 0, 0);
+    startTime.setUTCHours(8, 0, 0, 0); // Adjusted for UTC+7 (Thailand time)
     const endTime = new Date();
-    endTime.setUTCHours(11, 0, 0, 0);
+    endTime.setUTCHours(18, 0, 0, 0); // Adjusted for UTC+7 (Thailand time)
 
     const salesByTime = await SaleOrder.aggregate([
       {
@@ -782,21 +782,63 @@ router.get("/dashboard/salesByTime", async (req, res) => {
   }
 });
 
+router.get("/dashboard/salesByWeek", async (req, res) => {
+  try {
+    const weeklySales = await SaleOrder.aggregate([
+      {
+        $group: {
+          _id: { $week: "$date" },
+          totalSales: { $sum: "$total" },
+        },
+      },
+      {
+        $sort: { _id: 1 },
+      },
+    ]);
+    res.json(weeklySales);
+  } catch (error) {
+    console.error("Error fetching weekly sales:", error);
+    res.status(500).json({ error: "Error fetching weekly sales" });
+  }
+});
+
 router.get("/dashboard/salesByMonth", async (req, res) => {
   try {
     const monthlySales = await SaleOrder.aggregate([
       {
         $group: {
-          _id: { $month: "$date" }, // Group by month
-          totalSales: { $sum: "$total" }, // Sum of total sales for each month
+          _id: { $month: "$date" },
+          totalSales: { $sum: "$total" },
         },
       },
-      { $sort: { _id: 1 } }, // Sort by month
+      { $sort: { _id: 1 } },
     ]);
     res.json(monthlySales);
   } catch (error) {
     console.error("Error fetching monthly sales:", error);
     res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.get("/dashboard/salesByYear", async (req, res) => {
+  try {
+    const yearlySales = await SaleOrder.aggregate([
+      {
+        $group: {
+          _id: {
+            year: { $year: "$date" }, // Extract year from the 'date' field
+          },
+          totalSales: { $sum: "$total" },
+        },
+      },
+      {
+        $sort: { "_id.year": 1 },
+      },
+    ]);
+    res.json(yearlySales);
+  } catch (error) {
+    console.error("Error fetching yearly sales:", error);
+    res.status(500).json({ error: "Error fetching yearly sales" });
   }
 });
 

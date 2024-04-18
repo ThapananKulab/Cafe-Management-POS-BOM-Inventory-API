@@ -749,9 +749,9 @@ router.get("/dashboard/total-profit", async (req, res) => {
 router.get("/dashboard/salesByTime", async (req, res) => {
   try {
     const startTime = new Date();
-    startTime.setUTCHours(8, 0, 0, 0); // Adjusted for UTC+7 (Thailand time)
+    startTime.setHours(0, 0, 0, 0); // เริ่มต้นที่ 00:00:00 ของวันนี้
     const endTime = new Date();
-    endTime.setUTCHours(18, 0, 0, 0); // Adjusted for UTC+7 (Thailand time)
+    endTime.setHours(23, 59, 59, 999); // สิ้นสุดที่ 23:59:59 ของวันนี้
 
     const salesByTime = await SaleOrder.aggregate([
       {
@@ -786,6 +786,11 @@ router.get("/dashboard/salesByWeek", async (req, res) => {
   try {
     const weeklySales = await SaleOrder.aggregate([
       {
+        $match: {
+          status: "Completed", // เพิ่มเงื่อนไขตรวจสอบสถานะเป็น Completed เท่านั้น
+        },
+      },
+      {
         $group: {
           _id: { $week: "$date" },
           totalSales: { $sum: "$total" },
@@ -806,6 +811,11 @@ router.get("/dashboard/salesByMonth", async (req, res) => {
   try {
     const monthlySales = await SaleOrder.aggregate([
       {
+        $match: {
+          status: "Completed", // เพิ่มเงื่อนไขตรวจสอบสถานะเป็น Completed เท่านั้น
+        },
+      },
+      {
         $group: {
           _id: { $month: "$date" },
           totalSales: { $sum: "$total" },
@@ -823,6 +833,11 @@ router.get("/dashboard/salesByMonth", async (req, res) => {
 router.get("/dashboard/salesByYear", async (req, res) => {
   try {
     const yearlySales = await SaleOrder.aggregate([
+      {
+        $match: {
+          status: "Completed", // เพิ่มเงื่อนไขตรวจสอบสถานะเป็น Completed เท่านั้น
+        },
+      },
       {
         $group: {
           _id: {

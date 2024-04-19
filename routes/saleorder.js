@@ -264,32 +264,20 @@ router.post("/:orderId/deductStock", async (req, res) => {
     if (!saleOrder) {
       return res.status(404).json({ message: "Sale order not found." });
     }
-
     for (const item of saleOrder.items) {
       const menuItem = item.menuItem;
-
-      if (!menuItem.recipe || !menuItem.recipe.ingredients) {
-        continue;
-      }
 
       for (const ingredient of menuItem.recipe.ingredients) {
         const inventoryItem = await InventoryItem.findById(
           ingredient.inventoryItemId
         );
 
-        if (!inventoryItem) {
-          console.warn(
-            `Inventory item not found for ID: ${ingredient.inventoryItemId}`
-          );
-          continue;
-        }
-
         const quantityUsed = ingredient.quantity * item.quantity;
         const newQuantityInStock = inventoryItem.quantityInStock - quantityUsed;
 
         if (newQuantityInStock < 0) {
           return res.status(400).json({
-            message: `Not enough stock for item ID: ${ingredient.inventoryItemId}.`,
+            message: `วัตถุดิบไม่เพียงพอ: ${ingredient.inventoryItemId}.`,
           });
         }
         inventoryItem.quantityInStock = newQuantityInStock;
@@ -298,9 +286,9 @@ router.post("/:orderId/deductStock", async (req, res) => {
       }
     }
 
-    res.status(200).json({ message: "Stock deducted successfully." });
+    res.status(200).json({ message: "หัก Stock เรียบร้อยแล้ว" });
   } catch (error) {
-    console.error("Error deducting stock:", error);
+    console.error("Error:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
@@ -438,51 +426,51 @@ router.get("/report/dailySales", async (req, res) => {
   }
 });
 
-router.get("/report/weeklySales", async (req, res) => {
-  try {
-    const currentDate = new Date().toLocaleString("en-US", {
-      timeZone: "Asia/Bangkok",
-    });
-    const currentThaiDate = new Date(currentDate);
-    const startOfWeek = new Date(currentThaiDate);
-    const currentDayOfWeek = startOfWeek.getDay();
-    startOfWeek.setDate(startOfWeek.getDate() - currentDayOfWeek);
-    startOfWeek.setHours(0, 0, 0, 0);
+// router.get("/report/weeklySales", async (req, res) => {
+//   try {
+//     const currentDate = new Date().toLocaleString("en-US", {
+//       timeZone: "Asia/Bangkok",
+//     });
+//     const currentThaiDate = new Date(currentDate);
+//     const startOfWeek = new Date(currentThaiDate);
+//     const currentDayOfWeek = startOfWeek.getDay();
+//     startOfWeek.setDate(startOfWeek.getDate() - currentDayOfWeek);
+//     startOfWeek.setHours(0, 0, 0, 0);
 
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(startOfWeek.getDate() + 6);
-    endOfWeek.setHours(23, 59, 59, 999);
+//     const endOfWeek = new Date(startOfWeek);
+//     endOfWeek.setDate(startOfWeek.getDate() + 6);
+//     endOfWeek.setHours(23, 59, 59, 999);
 
-    const weeklyOrders = await SaleOrder.find({
-      status: { $nin: ["Pending", "Cancelled"] },
-      date: { $gte: startOfWeek, $lte: endOfWeek },
-    });
-    const weeklySales = [];
-    let totalSales = 0;
-    for (let i = 0; i <= currentDayOfWeek; i++) {
-      const currentDate = new Date(startOfWeek);
-      currentDate.setDate(startOfWeek.getDate() + i);
-      currentDate.setHours(0, 0, 0, 0);
+//     const weeklyOrders = await SaleOrder.find({
+//       status: { $nin: ["Pending", "Cancelled"] },
+//       date: { $gte: startOfWeek, $lte: endOfWeek },
+//     });
+//     const weeklySales = [];
+//     let totalSales = 0;
+//     for (let i = 0; i <= currentDayOfWeek; i++) {
+//       const currentDate = new Date(startOfWeek);
+//       currentDate.setDate(startOfWeek.getDate() + i);
+//       currentDate.setHours(0, 0, 0, 0);
 
-      const endOfDay = new Date(currentDate);
-      endOfDay.setHours(23, 59, 59, 999);
+//       const endOfDay = new Date(currentDate);
+//       endOfDay.setHours(23, 59, 59, 999);
 
-      let dailySales = 0;
-      for (const order of weeklyOrders) {
-        if (order.date >= currentDate && order.date <= endOfDay) {
-          dailySales += order.total;
-          totalSales += order.total;
-        }
-      }
-      const formattedDate = currentDate.toISOString().slice(0, 10);
-      weeklySales.push({ date: formattedDate, dailySales });
-    }
+//       let dailySales = 0;
+//       for (const order of weeklyOrders) {
+//         if (order.date >= currentDate && order.date <= endOfDay) {
+//           dailySales += order.total;
+//           totalSales += order.total;
+//         }
+//       }
+//       const formattedDate = currentDate.toISOString().slice(0, 10);
+//       weeklySales.push({ date: formattedDate, dailySales });
+//     }
 
-    res.json({ weeklySales, totalSales });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
+//     res.json({ weeklySales, totalSales });
+//   } catch (error) {
+//     res.status(500).json({ message: error.message });
+//   }
+// });
 
 router.get("/report/monthlySales", async (req, res) => {
   try {

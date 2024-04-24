@@ -267,7 +267,7 @@ router.get("/menu/:id", async (req, res) => {
       populate: {
         path: "ingredients.inventoryItemId",
         model: "InventoryItem",
-        select: "name", // Select the 'name' field of the InventoryItem
+        select: "name",
       },
     });
 

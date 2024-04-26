@@ -40,9 +40,7 @@ app.use('/public', express.static('public'))
 app.get('/', (req, res) => {
   res.send('Server is running')
 })
-app.get('/favicon.ico', (req, res) => {
-  res.send('Server is running')
-})
+
 // app.use(express.static(dist));
 
 app.use(express.urlencoded({ extended: true }))

@@ -217,7 +217,7 @@ app.post('/generateQR', (req, res) => {
       throw new Error('Invalid amount')
     }
 
-    const mobileNumber = '0819139936'
+    const mobileNumber = phoneNumber
     const payload = generatePayload(mobileNumber, { amount: amountFloat })
 
     const option = {
@@ -306,3 +306,9 @@ app.use('/api/supplier', supplier)
 
 const purchaseitem = require('./routes/purchaseitem')
 app.use('/api/purchaseitem', purchaseitem)
+
+const phonenumber = require('./routes/phonenumber')
+app.use('/api/phonenumber', phonenumber)
+
+const promptpay = require('./routes/promptpay')
+app.use('/api/promptpay', promptpay)

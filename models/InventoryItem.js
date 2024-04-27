@@ -1,23 +1,23 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose')
 
 const inventoryItemSchema = new mongoose.Schema({
   name: { type: String, required: true },
   type: {
     type: String,
     enum: [
-      "ถุง",
-      "กระปุก",
-      "ทั่วไป",
-      "กระป๋อง",
-      "แก้ว",
-      "ทั่วไป",
-      "ขวด",
-      "ถัง",
+      'ถุง',
+      'กระปุก',
+      'ทั่วไป',
+      'กระป๋อง',
+      'แก้ว',
+      'ทั่วไป',
+      'ขวด',
+      'ถัง',
     ],
   },
   unit: {
     type: String,
-    enum: ["กรัม", "มิลลิลิตร", "ชิ้น", "ซอง", "ทั่วไป"],
+    enum: ['กรัม', 'มิลลิลิตร', 'ชิ้น', 'ซอง', 'ทั่วไป'],
   },
   // received: { type: Date, default: Date.now },
   realquantity: { type: Number, required: true },
@@ -26,14 +26,21 @@ const inventoryItemSchema = new mongoose.Schema({
   unitPrice: { type: Number, required: true },
   status: {
     type: String,
-    enum: ["pending", "withdrawn"],
-    default: "pending",
+    enum: ['pending', 'withdrawn'],
+    default: 'pending',
   },
-});
+  editHistory: [
+    {
+      editedBy: { type: String },
+      action: { type: String, enum: ['เพิ่ม', 'แก้ไข', 'ลบ'] },
+      timestamp: { type: Date, default: Date.now },
+    },
+  ],
+})
 
 inventoryItemSchema.methods.adjustStock = async function (amount) {
-  this.quantityInStock += amount;
-  await this.save();
-};
+  this.quantityInStock += amount
+  await this.save()
+}
 
-module.exports = mongoose.model("InventoryItem", inventoryItemSchema);
+module.exports = mongoose.model('InventoryItem', inventoryItemSchema)

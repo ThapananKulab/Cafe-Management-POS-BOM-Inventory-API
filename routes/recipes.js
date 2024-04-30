@@ -29,7 +29,7 @@ router.post('/add', async (req, res) => {
 
   try {
     const newRecipe = await recipe.save();
-    const text = `BOM ชื่อ ${name} ถูกเพิ่ม${cost} บาท ถูกเพิ่มเรียบร้อย`;
+    const text = `BOM ชื่อ ${name} ถูกเพิ่ม${cost} บาท ถูกเพิ่ม`;
     await notifyLine(tokenline, text);
     res.status(201).json(newRecipe);
   } catch (err) {

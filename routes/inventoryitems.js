@@ -3,6 +3,9 @@ const router = express.Router();
 const Recipe = require("../models/Recipe");
 const InventoryItem = require("../models/InventoryItem.js");
 
+const { notifyLine } = require("../function/notify.js");
+const tokenline = "DWTW5lpLAyy8v2zXVMeKaLenXJZBei9Zs7YXeoDqdxO"
+
 router.get("/all", async (req, res) => {
   try {
     const items = await InventoryItem.find();
@@ -49,6 +52,8 @@ router.post("/add", async (req, res) => {
 
   try {
     const newItem = await item.save();
+    const text = `วัตถุดิบ ชื่อ ${name}, ประเภท ${type}, หน่วย ${unit}, จำนวนจริง ${realquantity}, จำนวนในสต็อก ${quantityInStock}, ราคาต่อหน่วย ${unitPrice} บาท ถูกเพิ่ม`;
+    await notifyLine(tokenline, text);
     res.status(201).json(newItem);
   } catch (error) {
     res.status(400).send(error.message);
@@ -132,8 +137,6 @@ router.get("/:id", async (req, res) => {
 router.delete("/inventory/delete/:inventoryItemId", async (req, res) => {
   try {
     const { inventoryItemId } = req.params;
-
-    // Check if the inventory item is being used in any recipes
     const isUsedInRecipe = await Recipe.findOne({
       "ingredients.inventoryItemId": inventoryItemId,
     });
@@ -143,21 +146,22 @@ router.delete("/inventory/delete/:inventoryItemId", async (req, res) => {
         message: "Cannot delete: This inventory item is being used in recipes.",
       });
     }
-    const deletedInventoryItem = await InventoryItem.findByIdAndDelete(
-      inventoryItemId
-    );
+    const itemToBeDeleted = await InventoryItem.findById(inventoryItemId);
 
-    if (!deletedInventoryItem) {
+    if (!itemToBeDeleted) {
       return res
         .status(404)
         .json({ message: "No inventory item found with that ID." });
     }
-
+    const text = `ID ${inventoryItemId}, ชื่อวัตถุดิบ ${itemToBeDeleted.name} ถูกลบ`;
+    const deletedInventoryItem = await InventoryItem.findByIdAndDelete(inventoryItemId);
+    await notifyLine(tokenline, text);
     res.status(200).json({ message: "Inventory item deleted successfully." });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
+
 
 router.post("/reduce-stock", async (req, res) => {
   const { orderId, quantity } = req.body;

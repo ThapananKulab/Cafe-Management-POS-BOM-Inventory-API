@@ -11,6 +11,7 @@ exports.notifyLine = async (token, message) => {
       },
       data: "message=" + message,
     });
+  
   } catch (err) {
     console.log(err);
   }

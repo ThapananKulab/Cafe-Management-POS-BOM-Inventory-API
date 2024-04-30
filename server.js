@@ -17,7 +17,6 @@ const generatePayload = require('promptpay-qr')
 const QRCode = require('qrcode')
 
 const { notifyLine } = require("./function/notify.js");
-
 const tokenline = "DWTW5lpLAyy8v2zXVMeKaLenXJZBei9Zs7YXeoDqdxO"
 
 
@@ -32,10 +31,10 @@ app.use(
   expressSession({
     cookie: { maxAge: 86400000 },
     store: new MemoryStore({
-      checkPeriod: 86400000, // prune expired entries every 24h
+      checkPeriod: 86400000, 
     }),
     resave: false,
-    saveUninitialized: true, // Add this line
+    saveUninitialized: true,
     secret: 'Fullstack',
   })
 )
@@ -90,8 +89,9 @@ app.post('/api/login', jsonParser, async (req, res) => {
         var token = jwt.sign(payload, secret, {
           expiresIn: '7h',
         })
-        const text = user.username + "เข้าสู่ระบบเรียบร้อยแล้ว";
+        const text = user.username + " เข้าสู่ระบบเรียบร้อยแล้ว";
         await notifyLine(tokenline, text);
+        
         res.json({ message: 'Success', token: token })
       } else {
         res.json({

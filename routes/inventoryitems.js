@@ -154,7 +154,7 @@ router.delete("/inventory/delete/:inventoryItemId", async (req, res) => {
         .json({ message: "No inventory item found with that ID." });
     }
     const text = `ID ${inventoryItemId}, ชื่อวัตถุดิบ ${itemToBeDeleted.name} ถูกลบ`;
-    const deletedInventoryItem = await InventoryItem.findByIdAndDelete(inventoryItemId);
+    // const deletedInventoryItem = await InventoryItem.findByIdAndDelete(inventoryItemId);
     await notifyLine(tokenline, text);
     res.status(200).json({ message: "Inventory item deleted successfully." });
   } catch (error) {

@@ -89,9 +89,9 @@ app.post('/api/login', jsonParser, async (req, res) => {
         var token = jwt.sign(payload, secret, {
           expiresIn: '7h',
         })
-        const text = user.username + " เข้าสู่ระบบเรียบร้อยแล้ว";
+        const text = user.username + " เข้าสู่ระบบ";
         await notifyLine(tokenline, text);
-        
+
         res.json({ message: 'Success', token: token })
       } else {
         res.json({

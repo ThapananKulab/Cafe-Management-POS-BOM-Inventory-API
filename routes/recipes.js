@@ -56,7 +56,7 @@ router.delete('/delete/:id', async (req, res) => {
     res
       .status(200)
       .json({ message: 'Recipe deleted successfully.', recipe: deletedRecipe })
-      const text = `ID ${id}, ชื่อ BOM ${deletedRecipe.name} ถูกลบ`;
+      const text = `BOM ชื่อ "${deletedRecipe.name}" ถูกลบ`;
       await notifyLine(tokenline, text);
   } catch (error) {
     res.status(500).json({ message: error.message })

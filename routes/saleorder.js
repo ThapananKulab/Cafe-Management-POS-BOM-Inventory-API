@@ -4,9 +4,6 @@ const moment = require("moment-timezone");
 const SaleOrder = require("../models/SaleOrder.js");
 const InventoryItem = require("../models/InventoryItem");
 
-const { notifyLine } = require("../function/notify.js");
-const tokenline = "DWTW5lpLAyy8v2zXVMeKaLenXJZBei9Zs7YXeoDqdxO"
-
 router.post("/saleOrders", async (req, res) => {
   try {
     const { user, items, total, status, paymentMethod, notes, change, profit } =
@@ -24,8 +21,7 @@ router.post("/saleOrders", async (req, res) => {
     });
 
     const savedOrder = await newOrder.save();
-    const text = `มีออเดอร์ ${id} ชื่อ ${items}, จำนวนเงิน ${total} บาท`;
-    await notifyLine(tokenline, text);
+
     res.status(201).json(savedOrder);
   } catch (error) {
     console.error("Error creating order:", error);

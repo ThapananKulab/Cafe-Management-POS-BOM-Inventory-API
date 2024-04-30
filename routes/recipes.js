@@ -3,7 +3,9 @@ const router = express.Router()
 const Recipe = require('../models/Recipe.js')
 const Menu = require('../models/Menu.js')
 
-//
+const { notifyLine } = require("../function/notify.js");
+const tokenline = "DWTW5lpLAyy8v2zXVMeKaLenXJZBei9Zs7YXeoDqdxO"
+
 router.get('/all', async (req, res) => {
   try {
     const recipes = await Recipe.find({}).populate(
@@ -16,22 +18,25 @@ router.get('/all', async (req, res) => {
 })
 
 router.post('/add', async (req, res) => {
-  console.log(req.body)
+  console.log(req.body);
+  const { name, ingredients, cost } = req.body;
 
   const recipe = new Recipe({
-    name: req.body.name,
-    ingredients: req.body.ingredients,
-    cost: req.body.cost,
-  })
+    name,
+    ingredients,
+    cost,
+  });
 
   try {
-    const newRecipe = await recipe.save()
-    res.status(201).json(newRecipe)
+    const newRecipe = await recipe.save();
+    const text = `BOM ชื่อ ${name} ถูกเพิ่ม${cost} บาท ถูกเพิ่มเรียบร้อย`;
+    await notifyLine(tokenline, text);
+    res.status(201).json(newRecipe);
   } catch (err) {
-    console.error(err)
-    res.status(400).json({ message: err.message })
+    console.error(err);
+    res.status(400).json({ message: err.message });
   }
-})
+});
 
 router.delete('/delete/:id', async (req, res) => {
   try {
@@ -52,6 +57,7 @@ router.delete('/delete/:id', async (req, res) => {
     res
       .status(200)
       .json({ message: 'Recipe deleted successfully.', recipe: deletedRecipe })
+      
   } catch (error) {
     res.status(500).json({ message: error.message })
   }

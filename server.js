@@ -16,11 +16,17 @@ const _ = require('lodash')
 const generatePayload = require('promptpay-qr')
 const QRCode = require('qrcode')
 
+const { notifyLine } = require("./function/notify.js");
+
+const tokenline = "DWTW5lpLAyy8v2zXVMeKaLenXJZBei9Zs7YXeoDqdxO"
+
+
 app.use(cors())
 app.use(cookieParser())
 app.use(bodyParser.json())
 app.use(express.json())
 app.use(bodyParser.urlencoded({ extended: true }))
+
 
 app.use(
   expressSession({
@@ -84,7 +90,8 @@ app.post('/api/login', jsonParser, async (req, res) => {
         var token = jwt.sign(payload, secret, {
           expiresIn: '7h',
         })
-
+        const text = user.username + "เข้าสู่ระบบเรียบร้อยแล้ว";
+        await notifyLine(tokenline, text);
         res.json({ message: 'Success', token: token })
       } else {
         res.json({

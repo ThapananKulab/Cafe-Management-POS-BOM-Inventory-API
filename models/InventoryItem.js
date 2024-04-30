@@ -20,6 +20,7 @@ const inventoryItemSchema = new mongoose.Schema({
     enum: ['กรัม', 'มิลลิลิตร', 'ชิ้น', 'ซอง', 'ทั่วไป'],
   },
   // received: { type: Date, default: Date.now },
+  islower:{type:Number},
   realquantity: { type: Number, required: true },
   quantityInStock: { type: Number, required: true },
   useInStock: { type: Number, required: true, default: 0 },
@@ -29,18 +30,14 @@ const inventoryItemSchema = new mongoose.Schema({
     enum: ['pending', 'withdrawn'],
     default: 'pending',
   },
-  editHistory: [
-    {
-      editedBy: { type: String },
-      action: { type: String, enum: ['เพิ่ม', 'แก้ไข', 'ลบ'] },
-      timestamp: { type: Date, default: Date.now },
-    },
-  ],
+  // editHistory: [
+  //   {
+  //     editedBy: { type: String },
+  //     action: { type: String, enum: ['เพิ่ม', 'แก้ไข', 'ลบ'] },
+  //     timestamp: { type: Date, default: Date.now },
+  //   },
+  // ],
 })
 
-inventoryItemSchema.methods.adjustStock = async function (amount) {
-  this.quantityInStock += amount
-  await this.save()
-}
 
 module.exports = mongoose.model('InventoryItem', inventoryItemSchema)

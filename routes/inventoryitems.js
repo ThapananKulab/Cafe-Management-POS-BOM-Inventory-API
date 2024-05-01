@@ -101,6 +101,7 @@ router.patch("/update/:id", async (req, res) => {
   const { id } = req.params;
   const { name, type, unit, realquantity, quantityInStock, unitPrice } =
     req.body;
+
   try {
     const oldItem = await InventoryItem.findById(id);
 
@@ -110,14 +111,7 @@ router.patch("/update/:id", async (req, res) => {
 
     const updatedItem = await InventoryItem.findByIdAndUpdate(
       id,
-      {
-        name,
-        type,
-        unit,
-        realquantity,
-        quantityInStock,
-        unitPrice,
-      },
+      { name, type, unit, realquantity, quantityInStock, unitPrice },
       { new: true }
     );
 
@@ -128,28 +122,35 @@ router.patch("/update/:id", async (req, res) => {
     // เปรียบเทียบข้อมูลก่อนและหลังการอัพเดต
     const changes = [];
     if (oldItem.name !== updatedItem.name) {
-      changes.push(`ชื่อ: ${updatedItem.name}`);
+      changes.push(`ชื่อ: ${oldItem.name} เป็น ${updatedItem.name}`);
     }
     if (oldItem.type !== updatedItem.type) {
-      changes.push(`ประเภท: ${updatedItem.type}`);
+      changes.push(`ประเภท: ${oldItem.type} เป็น ${updatedItem.type}`);
     }
     if (oldItem.unit !== updatedItem.unit) {
-      changes.push(`หน่วย: ${updatedItem.unit}`);
+      changes.push(`หน่วย: ${oldItem.unit} เป็น ${updatedItem.unit}`);
     }
     if (oldItem.realquantity !== updatedItem.realquantity) {
-      changes.push(`จำนวนจริง: ${updatedItem.realquantity}`);
+      changes.push(
+        `จำนวนใน Stock: ${oldItem.realquantity} เป็น ${updatedItem.realquantity}`
+      );
     }
     if (oldItem.quantityInStock !== updatedItem.quantityInStock) {
-      changes.push(`จำนวนในสต๊อก: ${updatedItem.quantityInStock}`);
+      changes.push(
+        `จำนวนในสต๊อก: ${oldItem.quantityInStock} เป็น ${updatedItem.quantityInStock}`
+      );
     }
     if (oldItem.unitPrice !== updatedItem.unitPrice) {
-      changes.push(`ราคาต่อหน่วย: ${updatedItem.unitPrice}`);
+      changes.push(
+        `ราคาต่อหน่วย: ${oldItem.unitPrice} เป็น ${updatedItem.unitPrice}`
+      );
     }
 
+    // ส่งข้อมูลเกี่ยวกับการเปลี่ยนแปลงและข้อมูลเดิมไปยัง Line Bot
     if (changes.length > 0) {
-      const text = `ข้อมูล ${updatedItem.name} ถูกแก้ไข:\n${changes.join(
-        "\n"
-      )}`;
+      const text = `วัตถุดิบชื่อ "${
+        updatedItem.name
+      }" ถูกแก้ไข:\n${changes.join("\n")}`;
       await notifyLine(tokenline, text);
     }
 

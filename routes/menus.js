@@ -6,6 +6,9 @@ const Recipe = require("../models/Recipe.js");
 const cloudinary = require("../utils/cloudinary.js");
 const multer = require("multer");
 
+const { notifyLine } = require("../function/notify.js");
+const tokenline = "DWTW5lpLAyy8v2zXVMeKaLenXJZBei9Zs7YXeoDqdxO";
+
 const storage = multer.diskStorage({});
 const parser = multer({ storage: storage });
 
@@ -47,6 +50,15 @@ router.post("/addMenu", parser.single("image"), async (req, res) => {
     });
 
     const savedItem = await menuItem.save();
+    // ส่งข้อมูลการเพิ่มรายการเมนูไปยัง Line Notify
+    const text = `รายการเมนู "${savedItem.name}" ถูกเพิ่มแล้ว\n
+    ราคา: ${savedItem.price} บาท\n
+    ระดับความหวาน: ${savedItem.sweetLevel}\n
+    ประเภท: ${savedItem.type}\n
+    ขนาดแก้ว: ${savedItem.glassSize}\n
+    ราคาขาย: ${savedItem.cost} บาท`;
+    await notifyLine(tokenline, text);
+
     res.status(201).json({
       success: true,
       menuItem: savedItem,
@@ -78,9 +90,10 @@ router.delete("/:id", async (req, res) => {
         .json({ success: false, message: "Menu item not found" });
     }
 
-    // Optionally, you can also delete the associated image from Cloudinary here
-    // if you store the public_id from Cloudinary in your Menu model
-    // await cloudinary.uploader.destroy(deletedItem.cloudinaryPublicId);
+    // สร้างข้อความแจ้งเตือน
+    const text = `รายการ "${deletedItem.name}" ถูกลบ`;
+    // ส่งข้อความไปยัง Line Notify
+    await notifyLine(tokenline, text);
 
     res.json({
       success: true,
@@ -120,17 +133,18 @@ router.get("/checkName", async (req, res) => {
 
 router.put("/:id", parser.single("image"), async (req, res) => {
   const { id } = req.params;
-  const {
-    name,
-    description,
-    price,
-    sweetLevel,
-    type,
-    recipe,
-    glassSize, // เพิ่ม glassSize ลงในข้อมูลของเมนู
-  } = req.body;
+  const { name, description, price, sweetLevel, type, recipe, glassSize } =
+    req.body;
 
   try {
+    // ค้นหาข้อมูลเก่าก่อนการอัปเดต
+    const oldItem = await Menu.findById(id);
+    if (!oldItem) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Menu item not found" });
+    }
+
     let updatedData = {
       name,
       description,
@@ -151,17 +165,49 @@ router.put("/:id", parser.single("image"), async (req, res) => {
     const updatedItem = await Menu.findByIdAndUpdate(id, updatedData, {
       new: true,
     });
-
     if (!updatedItem) {
       return res
         .status(404)
         .json({ success: false, message: "Menu item not found" });
     }
 
+    // ตรวจสอบและกำหนดข้อมูลที่ถูกแก้ไข
+    let changes = [];
+    if (oldItem.name !== updatedItem.name) {
+      changes.push(`ชื่อ: ${oldItem.name} เป็น ${updatedItem.name}`);
+    }
+    if (oldItem.description !== updatedItem.description) {
+      changes.push(
+        `คำอธิบาย: ${oldItem.description} เป็น ${updatedItem.description}`
+      );
+    }
+    if (oldItem.sweetLevel !== updatedItem.sweetLevel) {
+      changes.push(
+        `ระดับความหวาน: ${oldItem.sweetLevel} เป็น ${updatedItem.sweetLevel}`
+      );
+    }
+    if (oldItem.type !== updatedItem.type) {
+      changes.push(`ประเภท: ${oldItem.type} เป็น ${updatedItem.type}`);
+    }
+    if (oldItem.glassSize !== updatedItem.glassSize) {
+      changes.push(
+        `ขนาดแก้ว: ${oldItem.glassSize} เป็น ${updatedItem.glassSize}`
+      );
+    }
+    if (oldItem.price !== updatedItem.price) {
+      changes.push(`ราคา: ${oldItem.price} เป็น ${updatedItem.price}`);
+    }
+
+    if (changes.length > 0) {
+      const text = `เมนู"${updatedItem.name}" ถูกแก้ไข:\n${changes.join("\n")}`;
+      await notifyLine(tokenline, text);
+    }
+
     res.json({
       success: true,
       message: "Menu item updated successfully",
       menuItem: updatedItem,
+      changes: changes,
     });
   } catch (error) {
     console.error(error);

@@ -4,7 +4,7 @@ const Recipe = require("../models/Recipe");
 const InventoryItem = require("../models/InventoryItem.js");
 
 const { notifyLine } = require("../function/notify.js");
-const tokenline = "DWTW5lpLAyy8v2zXVMeKaLenXJZBei9Zs7YXeoDqdxO"
+const tokenline = "DWTW5lpLAyy8v2zXVMeKaLenXJZBei9Zs7YXeoDqdxO";
 
 router.get("/all", async (req, res) => {
   try {
@@ -102,6 +102,12 @@ router.patch("/update/:id", async (req, res) => {
   const { name, type, unit, realquantity, quantityInStock, unitPrice } =
     req.body;
   try {
+    const oldItem = await InventoryItem.findById(id);
+
+    if (!oldItem) {
+      return res.status(404).json({ message: "Inventory item not found." });
+    }
+
     const updatedItem = await InventoryItem.findByIdAndUpdate(
       id,
       {
@@ -114,14 +120,70 @@ router.patch("/update/:id", async (req, res) => {
       },
       { new: true }
     );
+
     if (!updatedItem) {
       return res.status(404).json({ message: "Inventory item not found." });
     }
+
+    // เปรียบเทียบข้อมูลก่อนและหลังการอัพเดต
+    const changes = [];
+    if (oldItem.name !== updatedItem.name) {
+      changes.push(`ชื่อ: ${updatedItem.name}`);
+    }
+    if (oldItem.type !== updatedItem.type) {
+      changes.push(`ประเภท: ${updatedItem.type}`);
+    }
+    if (oldItem.unit !== updatedItem.unit) {
+      changes.push(`หน่วย: ${updatedItem.unit}`);
+    }
+    if (oldItem.realquantity !== updatedItem.realquantity) {
+      changes.push(`จำนวนจริง: ${updatedItem.realquantity}`);
+    }
+    if (oldItem.quantityInStock !== updatedItem.quantityInStock) {
+      changes.push(`จำนวนในสต๊อก: ${updatedItem.quantityInStock}`);
+    }
+    if (oldItem.unitPrice !== updatedItem.unitPrice) {
+      changes.push(`ราคาต่อหน่วย: ${updatedItem.unitPrice}`);
+    }
+
+    if (changes.length > 0) {
+      const text = `ข้อมูล ${updatedItem.name} ถูกแก้ไข:\n${changes.join(
+        "\n"
+      )}`;
+      await notifyLine(tokenline, text);
+    }
+
     res.status(200).json(updatedItem);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
 });
+
+// router.patch("/update/:id", async (req, res) => {
+//   const { id } = req.params;
+//   const { name, type, unit, realquantity, quantityInStock, unitPrice } =
+//     req.body;
+//   try {
+//     const updatedItem = await InventoryItem.findByIdAndUpdate(
+//       id,
+//       {
+//         name,
+//         type,
+//         unit,
+//         realquantity,
+//         quantityInStock,
+//         unitPrice,
+//       },
+//       { new: true }
+//     );
+//     if (!updatedItem) {
+//       return res.status(404).json({ message: "Inventory item not found." });
+//     }
+//     res.status(200).json(updatedItem);
+//   } catch (error) {
+//     res.status(400).json({ message: error.message });
+//   }
+// });
 
 router.get("/:id", async (req, res) => {
   console.log(req.params.id); // Check the ID value
@@ -161,7 +223,6 @@ router.delete("/inventory/delete/:inventoryItemId", async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
-
 
 router.post("/reduce-stock", async (req, res) => {
   const { orderId, quantity } = req.body;

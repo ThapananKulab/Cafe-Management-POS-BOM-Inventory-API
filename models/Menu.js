@@ -1,4 +1,4 @@
-const mongoose = require('mongoose')
+const mongoose = require("mongoose");
 
 const MenuSchema = new mongoose.Schema({
   name: { type: String, required: true },
@@ -7,24 +7,24 @@ const MenuSchema = new mongoose.Schema({
   sweetLevel: {
     type: String,
     required: true,
-    enum: ['ปกติ', 'หวานน้อย', 'หวานมาก', 'ทั่วไป'],
+    enum: ["ปกติ", "หวานน้อย", "หวานมาก", "ทั่วไป"],
   },
   recipe: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Recipe',
+    ref: "Recipe",
     required: true,
   },
   type: {
     type: String,
     required: true,
-    enum: ['ร้อน', 'เย็น', 'ปั่น', 'ทั่วไป'],
+    enum: ["ร้อน", "เย็น", "ปั่น", "ทั่วไป"],
   },
   image: { type: String, required: true },
   cost: { type: Number },
   glassSize: {
     type: String,
-    enum: ['ไม่มี', 'เล็ก', 'กลาง', 'ใหญ่'],
+    enum: ["ไม่มี", "เล็ก", "กลาง", "ใหญ่"],
   },
-})
+});
 
-module.exports = mongoose.model('Menu', MenuSchema)
+module.exports = mongoose.model("Menu", MenuSchema);

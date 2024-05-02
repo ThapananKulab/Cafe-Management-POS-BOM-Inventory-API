@@ -317,3 +317,6 @@ app.use("/api/phonenumber", phonenumber);
 
 const promptpay = require("./routes/promptpay");
 app.use("/api/promptpay", promptpay);
+
+const expenses = require("./routes/expenses");
+app.use("/api/expenses", expenses);

@@ -39,8 +39,15 @@ router.get("/nearEmpty", async (req, res) => {
 
 // Add a new inventory item
 router.post("/add", async (req, res) => {
-  const { name, type, unit, realquantity, quantityInStock, unitPrice } =
-    req.body;
+  const {
+    name,
+    type,
+    unit,
+    realquantity,
+    quantityInStock,
+    unitPrice,
+    islower,
+  } = req.body;
   const item = new InventoryItem({
     name,
     type,
@@ -48,6 +55,7 @@ router.post("/add", async (req, res) => {
     realquantity,
     quantityInStock,
     unitPrice,
+    islower,
   });
 
   try {

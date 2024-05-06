@@ -739,10 +739,11 @@ router.get("/dashboard/total-profit", async (req, res) => {
 
 router.get("/dashboard/salesByTime", async (req, res) => {
   try {
-    const startTime = new Date();
-    startTime.setHours(0, 0, 0, 0); // เริ่มต้นที่ 00:00:00 ของวันนี้
-    const endTime = new Date();
-    endTime.setHours(23, 59, 59, 999); // สิ้นสุดที่ 23:59:59 ของวันนี้
+    const selectedDate = req.query.date; // Get selected date from query parameter
+    const startTime = new Date(selectedDate);
+    startTime.setHours(0, 0, 0, 0);
+    const endTime = new Date(selectedDate);
+    endTime.setHours(23, 59, 59, 999);
 
     const salesByTime = await SaleOrder.aggregate([
       {
@@ -751,7 +752,7 @@ router.get("/dashboard/salesByTime", async (req, res) => {
             $gte: startTime,
             $lt: endTime,
           },
-          status: "Completed", // เพิ่มเงื่อนไขที่ต้องการเช็ค
+          status: "Completed",
         },
       },
       {

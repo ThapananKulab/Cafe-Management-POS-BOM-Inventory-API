@@ -4,6 +4,9 @@ const moment = require("moment-timezone");
 const SaleOrder = require("../models/SaleOrder.js");
 const InventoryItem = require("../models/InventoryItem");
 
+const { notifyLine } = require("../function/notify.js");
+const tokenline = "DWTW5lpLAyy8v2zXVMeKaLenXJZBei9Zs7YXeoDqdxO";
+
 router.post("/saleOrders", async (req, res) => {
   try {
     const { user, items, total, status, paymentMethod, notes, change, profit } =
@@ -21,6 +24,11 @@ router.post("/saleOrders", async (req, res) => {
     });
 
     const savedOrder = await newOrder.save();
+    const message = `มี Order ใหม่เข้า
+    หมายคำสั่งซื้อ: ID ${savedOrder._id} \n
+    ราคา: ${savedOrder.total}\n
+    `;
+    await notifyLine(tokenline, message);
 
     res.status(201).json(savedOrder);
   } catch (error) {
@@ -224,10 +232,7 @@ router.get("/saleOrders/date/:formattedDate", async (req, res) => {
 
 const checkStockSufficiency = async (orderId) => {
   try {
-    // Retrieve the order from the database
     const order = await SaleOrder.findById(orderId);
-
-    // Check if the order exists
     if (!order) {
       console.error("Order not found");
       return false;
@@ -746,6 +751,7 @@ router.get("/dashboard/salesByTime", async (req, res) => {
             $gte: startTime,
             $lt: endTime,
           },
+          status: "Completed", // เพิ่มเงื่อนไขที่ต้องการเช็ค
         },
       },
       {
@@ -770,10 +776,25 @@ router.get("/dashboard/salesByTime", async (req, res) => {
 
 router.get("/dashboard/salesByWeek", async (req, res) => {
   try {
+    const startOfYear = new Date(new Date().getFullYear(), 0, 1);
+    const endOfYear = new Date(
+      new Date().getFullYear(),
+      11,
+      31,
+      23,
+      59,
+      59,
+      999
+    );
+
     const weeklySales = await SaleOrder.aggregate([
       {
         $match: {
-          status: "Completed", // เพิ่มเงื่อนไขตรวจสอบสถานะเป็น Completed เท่านั้น
+          status: "Completed",
+          date: {
+            $gte: startOfYear,
+            $lte: endOfYear,
+          },
         },
       },
       {
@@ -782,9 +803,7 @@ router.get("/dashboard/salesByWeek", async (req, res) => {
           totalSales: { $sum: "$total" },
         },
       },
-      {
-        $sort: { _id: 1 },
-      },
+      { $sort: { _id: 1 } },
     ]);
     res.json(weeklySales);
   } catch (error) {
@@ -795,10 +814,28 @@ router.get("/dashboard/salesByWeek", async (req, res) => {
 
 router.get("/dashboard/salesByMonth", async (req, res) => {
   try {
+    // กำหนดวันเริ่มต้นของปีปัจจุบัน
+    const startOfYear = new Date(new Date().getFullYear(), 0, 1);
+    // กำหนดวันสิ้นสุดของปีปัจจุบัน
+    const endOfYear = new Date(
+      new Date().getFullYear(),
+      11,
+      31,
+      23,
+      59,
+      59,
+      999
+    );
+
+    // ดึงข้อมูลรายการขายเฉพาะเดือนของปีปัจจุบันและที่มีสถานะเป็น Completed
     const monthlySales = await SaleOrder.aggregate([
       {
         $match: {
           status: "Completed", // เพิ่มเงื่อนไขตรวจสอบสถานะเป็น Completed เท่านั้น
+          date: {
+            $gte: startOfYear, // ให้วันที่อยู่ในช่วงเวลาตั้งแต่เริ่มต้นของปี
+            $lte: endOfYear, // ให้วันที่อยู่ในช่วงเวลาจนถึงสิ้นสุดของปี
+          },
         },
       },
       {

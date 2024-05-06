@@ -880,4 +880,43 @@ router.get("/dashboard/salesByYear", async (req, res) => {
   }
 });
 
+router.get("/dashboard/salesdata", async (req, res) => {
+  try {
+    const year = parseInt(req.query.year);
+
+    if (isNaN(year)) {
+      return res.status(400).json({ error: "Invalid year parameter" });
+    }
+
+    const startDate = new Date(year, 0, 1); // January 1st of the selected year
+    const endDate = new Date(year, 11, 31); // December 31st of the selected year
+
+    const salesData = await SaleOrder.aggregate([
+      {
+        $match: {
+          date: { $gte: startDate, $lte: endDate },
+          status: "Completed",
+        },
+      },
+      {
+        $group: {
+          _id: { $month: "$date" },
+          totalSales: { $sum: "$total" },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    const monthlySalesData = new Array(12).fill(0);
+    salesData.forEach((item) => {
+      monthlySalesData[item._id - 1] = item.totalSales;
+    });
+
+    res.json(monthlySalesData);
+  } catch (error) {
+    console.error("Error fetching sales data:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 module.exports = router;

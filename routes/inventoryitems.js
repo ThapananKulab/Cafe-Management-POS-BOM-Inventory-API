@@ -72,6 +72,7 @@ router.post("/add", async (req, res) => {
     quantityInStock,
     unitPrice,
     islower,
+    costPerUnit,
   } = req.body;
   const item = new InventoryItem({
     name,
@@ -81,6 +82,7 @@ router.post("/add", async (req, res) => {
     quantityInStock,
     unitPrice,
     islower,
+    costPerUnit,
   });
 
   try {

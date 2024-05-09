@@ -131,7 +131,7 @@ app.post("/api/authen", jsonParser, (req, res) => {
 //     res.json({ status: "error", message: err.message });
 //   }
 // });
-
+//
 // app.get('/api/authen', jsonParser, (req, res) => {
 //   try {
 //     const token = req.headers.authorization.split(' ')[1]

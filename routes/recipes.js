@@ -86,31 +86,31 @@ router.put("/update/:id", async (req, res) => {
       return res.status(404).json({ message: "No recipe found with that ID." });
     }
 
-    const changes = [];
-    if (oldRecipe.name !== updatedRecipe.name) {
-      changes.push(`ชื่อ: ${oldRecipe.name} เป็น ${updatedRecipe.name}`);
-    }
-    const oldIngredients = oldRecipe.ingredients.map((ingredient) =>
-      JSON.stringify(ingredient)
-    );
-    const newIngredients = updatedRecipe.ingredients.map((ingredient) =>
-      JSON.stringify(ingredient)
-    );
-    const diffIngredients = newIngredients.filter(
-      (ingredient) => !oldIngredients.includes(ingredient)
-    );
-    if (diffIngredients.length > 0) {
-      changes.push("ส่วนผสมถูกแก้ไข:");
-    }
-    if (oldRecipe.cost !== updatedRecipe.cost) {
-      changes.push(`ราคา: ${oldRecipe.cost} เป็น ${updatedRecipe.cost}`);
-    }
+    // const changes = [];
+    // if (oldRecipe.name !== updatedRecipe.name) {
+    //   changes.push(`ชื่อ: ${oldRecipe.name} เป็น ${updatedRecipe.name}`);
+    // }
+    // const oldIngredients = oldRecipe.ingredients.map((ingredient) =>
+    //   JSON.stringify(ingredient)
+    // );
+    // const newIngredients = updatedRecipe.ingredients.map((ingredient) =>
+    //   JSON.stringify(ingredient)
+    // );
+    // const diffIngredients = newIngredients.filter(
+    //   (ingredient) => !oldIngredients.includes(ingredient)
+    // );
+    // if (diffIngredients.length > 0) {
+    //   changes.push("ส่วนผสมถูกแก้ไข:");
+    // }
+    // if (oldRecipe.cost !== updatedRecipe.cost) {
+    //   changes.push(`ราคา: ${oldRecipe.cost} เป็น ${updatedRecipe.cost}`);
+    // }
 
-    // ส่งข้อมูลเกี่ยวกับการเปลี่ยนแปลงไปยัง Line Bot
-    if (changes.length > 0) {
-      const text = `BOM "${oldRecipe.name}" ถูกแก้ไข:\n${changes.join("\n")}`;
-      await notifyLine(tokenline, text);
-    }
+    // // ส่งข้อมูลเกี่ยวกับการเปลี่ยนแปลงไปยัง Line Bot
+    // if (changes.length > 0) {
+    //   const text = `BOM "${oldRecipe.name}" ถูกแก้ไข:\n${changes.join("\n")}`;
+    //   await notifyLine(tokenline, text);
+    // }
 
     res
       .status(200)

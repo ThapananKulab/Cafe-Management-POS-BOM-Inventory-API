@@ -47,10 +47,11 @@ router.post("/add-to-q", async (req, res) => {
     const {
       purchaseReceiptId,
       selectedItemIds,
-      status,
       received,
       withdrawner,
+      unitPrice,
     } = req.body;
+
     const purchaseReceipt = await PurchaseReceipt.findById(purchaseReceiptId);
     if (!purchaseReceipt) {
       return res.status(404).json({ message: "Purchase receipt not found" });
@@ -68,20 +69,27 @@ router.post("/add-to-q", async (req, res) => {
     await purchaseReceipt.save();
 
     for (const itemId of selectedItemIds) {
-      const { quantity, realquantity } = selectedItems.find(
+      const { quantity, realquantity, unitPrice } = selectedItems.find(
         (item) => item.item.toString() === itemId
       );
+      const incrementValue = quantity * realquantity;
       const updatedItem = await InventoryItem.findByIdAndUpdate(
         itemId,
         {
-          status: "withdrawn",
-          received: received,
-          $inc: { quantityInStock: quantity * realquantity },
+          $set: {
+            status: "withdrawn",
+            received: received,
+          },
+          $inc: {
+            quantityInStock: incrementValue,
+            realquantity: incrementValue,
+            unitPrice: unitPrice,
+          },
         },
         { new: true, upsert: true }
       );
       console.log(
-        `Updated status, received, and quantityInStock for item ${itemId} to withdrawn ${received}`
+        `Updated status, received, and quantities for item ${itemId} to withdrawn ${received}`
       );
     }
 

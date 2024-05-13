@@ -132,6 +132,25 @@ router.patch("/update-stock/:id", async (req, res) => {
   }
 });
 
+router.patch("/adjust-stock/:id", async (req, res) => {
+  const { id } = req.params;
+  const { adjustment } = req.body;
+
+  try {
+    const item = await InventoryItem.findById(id);
+    if (!item) {
+      return res.status(404).json({ message: "No item found with that ID." });
+    }
+    item.quantityInStock -= adjustment;
+    const updatedItem = await item.save();
+    res.status(200).json({
+      message: `${item.name} เพิ่มไป ${adjustment}. จำนวนคงเหลือ ${updatedItem.quantityInStock}.`,
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
 router.patch("/update/:id", async (req, res) => {
   const { id } = req.params;
   const { name, type, unit, realquantity, quantityInStock, unitPrice } =

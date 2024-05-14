@@ -133,8 +133,16 @@ router.get("/checkName", async (req, res) => {
 
 router.put("/:id", parser.single("image"), async (req, res) => {
   const { id } = req.params;
-  const { name, description, price, sweetLevel, type, recipe, glassSize } =
-    req.body;
+  const {
+    name,
+    description,
+    price,
+    sweetLevel,
+    type,
+    recipe,
+    glassSize,
+    cost,
+  } = req.body;
 
   try {
     // ค้นหาข้อมูลเก่าก่อนการอัปเดต
@@ -153,7 +161,9 @@ router.put("/:id", parser.single("image"), async (req, res) => {
       type,
       recipe,
       glassSize,
+      cost, // ตรวจสอบให้แน่ใจว่ามีบรรทัดนี้
     };
+
     if (req.file) {
       const imageUrl = req.file.path;
       const result = await cloudinary.uploader.upload(imageUrl, {
@@ -196,6 +206,9 @@ router.put("/:id", parser.single("image"), async (req, res) => {
     }
     if (oldItem.price !== updatedItem.price) {
       changes.push(`ราคา: ${oldItem.price} เป็น ${updatedItem.price}`);
+    }
+    if (oldItem.cost !== updatedItem.cost) {
+      changes.push(`ต้นทุน: ${oldItem.cost} เป็น ${updatedItem.cost}`);
     }
 
     if (changes.length > 0) {
